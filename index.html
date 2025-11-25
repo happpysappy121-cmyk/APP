@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Devbhoomi Elite - Ultimate Uttarakhand Guide</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Manrope', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        'alpine-dark': '#0f2c25', 
+                        'alpine-light': '#1a3c33',
+                        'gold-accent': '#d4af37', 
+                        'paper-bg': '#f4f5f7',
+                        'surface': '#ffffff',
+                        'eco-green': '#4ade80',
+                        'terracotta': '#e07a5f',
+                        'danger': '#dc2626',
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+                        'float': '0 10px 30px -5px rgba(15, 44, 37, 0.15)',
+                        'glow': '0 0 20px rgba(212, 175, 55, 0.3)',
+                        'ai-glow': '0 0 30px rgba(124, 58, 237, 0.3)',
+                    },
+                    backgroundImage: {
+                        'ai-gradient': 'linear-gradient(135deg, #0f2c25 0%, #2e1065 100%)',
+                        'card-gradient': 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, transparent 100%)',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'slide-up': 'slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'spin-slow': 'spin 8s linear infinite',
+                    },
+                    keyframes: {
+                        fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
+                        slideUp: { from: { transform: 'translateY(30px)', opacity: 0 }, to: { transform: 'translateY(0)', opacity: 1 } },
+                        float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .snap-x-mandatory { scroll-snap-type: x mandatory; }
+        .snap-center { scroll-snap-align: center; }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .zoom-img { transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .group:hover .zoom-img { transform: scale(1.1); }
+
+        .heart-btn i { transition: all 0.2s; }
+        .heart-btn.active i { color: #ef4444; transform: scale(1.2); }
+
+        /* Story Circle Gradient */
+        .story-ring { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 2px; }
+
+        /* Siren Animation */
+        @keyframes strobe-red { 0%, 100% { background-color: #dc2626; } 50% { background-color: #991b1b; } }
+        .siren-active { animation: strobe-red 0.5s infinite; }
+
+        /* Splash Screen */
+        #splash-screen { transition: opacity 0.8s ease-in-out, visibility 0.8s; }
+        #splash-screen.hidden-splash { opacity: 0; visibility: hidden; }
+
+        .view-section { display: none; opacity: 0; transition: opacity 0.3s ease; }
+        .view-section.active { display: block; opacity: 1; }
+        
+        body { -webkit-tap-highlight-color: transparent; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased bg-paper-bg font-sans pb-24 overflow-hidden" id="main-body">
+
+    <div id="splash-screen" class="fixed inset-0 z-[9999] bg-alpine-dark flex flex-col items-center justify-center text-white">
+        <div class="absolute inset-0 z-0">
+            <img src="https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1920&q=80" alt="Himalayas" class="w-full h-full object-cover opacity-50 zoom-img animate-pulse-slow">
+            <div class="absolute inset-0 bg-gradient-to-t from-alpine-dark via-alpine-dark/70 to-transparent"></div>
+        </div>
+        <div class="relative z-10 text-center p-8 animate-slide-up">
+            <div class="w-24 h-24 rounded-full border border-gold-accent/30 flex items-center justify-center mx-auto mb-6 shadow-glow bg-white/5 backdrop-blur-md animate-float">
+                <span class="text-5xl font-serif font-bold text-gold-accent">D</span>
+            </div>
+            <h1 class="text-4xl font-serif font-bold mb-3 text-white tracking-tight">Devbhoomi Elite</h1>
+            <p class="text-xs font-semibold text-gold-accent tracking-[0.2em] uppercase">The Abode of Gods</p>
+        </div>
+    </div>
+
+    <div id="camera-widget" class="fixed bottom-[130px] right-5 z-40 transition-all duration-300 transform translate-y-0">
+        <button onclick="openCamera()" class="w-12 h-12 rounded-full bg-terracotta text-white shadow-lg border-2 border-white/20 flex items-center justify-center active:scale-95 transition-transform hover:bg-terracotta/90">
+            <i class="fas fa-camera text-xl"></i>
+        </button>
+    </div>
+
+    <div id="radio-widget" class="fixed bottom-24 right-5 z-40 transition-all duration-300 transform translate-y-0">
+        <button onclick="toggleRadio()" class="w-12 h-12 rounded-full bg-alpine-dark text-gold-accent shadow-lg border-2 border-white/20 flex items-center justify-center animate-float">
+            <i class="fas fa-music" id="radio-icon"></i>
+        </button>
+        <div id="radio-player" class="absolute bottom-14 right-0 bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-xl w-48 hidden animate-fade-in border border-white/50">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-8 h-8 rounded-lg bg-alpine-dark flex items-center justify-center text-white"><i class="fas fa-mountain"></i></div>
+                <div><p class="text-xs font-bold text-alpine-dark">Pahadi Lo-Fi</p><p class="text-[10px] text-gray-500">Ambient</p></div>
+            </div>
+            <div class="h-1 bg-gray-200 rounded-full overflow-hidden"><div class="h-full w-1/2 bg-gold-accent animate-pulse"></div></div>
+        </div>
+    </div>
+
+    <header class="fixed top-0 inset-x-0 z-40 bg-white/80 backdrop-blur-md border-b border-white/50 shadow-sm transition-all duration-300" id="app-header">
+        <div class="max-w-md mx-auto px-5 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-alpine-dark text-gold-accent flex items-center justify-center text-lg font-serif font-bold shadow-lg">D</div>
+                <div>
+                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider flex items-center gap-1"><i class="fas fa-location-dot text-gold-accent"></i> Location</p>
+                    <h1 class="text-base font-bold text-alpine-dark leading-none">Dehradun <span class="text-xs font-normal text-gray-500 ml-1">700m</span></h1>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button class="text-xs font-bold text-alpine-dark bg-gray-100 px-2 py-1 rounded-lg border border-gray-200">EN</button>
+                <div class="flex items-center gap-2 bg-gray-100/80 px-3 py-1.5 rounded-full border border-gray-200">
+                    <i class="fas fa-cloud-sun text-gold-accent text-sm animate-pulse-slow"></i>
+                    <span class="text-xs font-bold text-gray-600">21°C</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="view-home" class="view-section active max-w-md mx-auto pt-24 space-y-8 pb-10">
+        
+        <div class="pl-5">
+            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-3">Himalayan Stories</h3>
+            <div class="flex gap-4 overflow-x-auto no-scrollbar pr-5">
+                <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="showToast('Loading Story: Roopkund')">
+                    <div class="w-16 h-16 rounded-full story-ring p-[2px]"><img src="https://images.unsplash.com/photo-1506103683072-2d184488340d?w=150&q=80" class="w-full h-full rounded-full object-cover border-2 border-white"></div>
+                    <span class="text-[10px] font-bold text-alpine-dark">Mystery</span>
+                </div>
+                <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="showToast('Loading Story: Dhari Devi')">
+                    <div class="w-16 h-16 rounded-full story-ring p-[2px]"><img src="https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=150&q=80" class="w-full h-full rounded-full object-cover border-2 border-white"></div>
+                    <span class="text-[10px] font-bold text-alpine-dark">Legends</span>
+                </div>
+                   <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="showToast('Loading Story: Food')">
+                    <div class="w-16 h-16 rounded-full bg-gray-200 p-[2px]"><img src="https://images.unsplash.com/photo-1596443686812-2f45229eeb36?w=150&q=80" class="w-full h-full rounded-full object-cover border-2 border-white"></div>
+                    <span class="text-[10px] font-bold text-gray-500">Food Trail</span>
+                </div>
+                   <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="showToast('Loading Story: Yetis')">
+                    <div class="w-16 h-16 rounded-full bg-gray-200 p-[2px]"><img src="https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=150&q=80" class="w-full h-full rounded-full object-cover border-2 border-white"></div>
+                    <span class="text-[10px] font-bold text-gray-500">Snow</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-5">
+            <div class="bg-ai-gradient rounded-[32px] p-6 text-white shadow-ai-glow relative overflow-hidden cursor-pointer group hover:shadow-2xl transition-all duration-300" onclick="triggerAI()">
+                <div class="absolute top-0 right-0 p-6 opacity-30 group-hover:opacity-50 transition-opacity"><i class="fas fa-sparkles text-5xl animate-pulse"></i></div>
+                <div class="absolute -bottom-20 -left-20 w-48 h-48 bg-purple-500 rounded-full filter blur-[80px] opacity-40 group-hover:opacity-60 transition-opacity"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center gap-2 mb-3"><span class="bg-white/10 backdrop-blur-md border border-white/20 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">DevAI Beta</span></div>
+                    <h2 class="text-2xl font-serif font-bold mb-2 leading-tight">Plan your spiritual<br>journey with AI</h2>
+                    <button class="bg-white text-alpine-dark text-xs font-bold py-3 px-5 rounded-xl shadow-lg flex items-center gap-2 group-hover:scale-105 transition-transform"><i class="fas fa-magic text-purple-600"></i> Ask DevAI</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="px-5">
+            <h3 class="text-lg font-bold text-alpine-dark font-serif mb-3 flex items-center gap-2"><i class="fas fa-satellite-dish text-red-500"></i> Live Crowd Alerts</h3>
+            <div class="bg-white p-4 rounded-2xl border border-red-100 shadow-float">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-red-100 text-danger flex items-center justify-center shrink-0"><i class="fas fa-traffic-light"></i></div>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-alpine-dark">Heavy Queue at Kedarnath Gate</p>
+                        <p class="text-xs text-gray-500">Reported 5 mins ago by 4 users. **Expect 2-hour wait.**</p>
+                    </div>
+                    <button onclick="showToast('Reported status.')" class="text-xs text-danger font-bold shrink-0">Validate</button>
+                </div>
+                <div class="mt-4 pt-3 border-t border-gray-100 flex justify-end">
+                    <button onclick="showToast('Thank you for reporting!')" class="text-xs font-bold text-alpine-dark bg-gray-50 px-3 py-1.5 rounded-xl flex items-center gap-1"><i class="fas fa-exclamation-circle text-terracotta"></i> Report Incident</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-5">
+            <h3 class="text-lg font-bold text-alpine-dark font-serif mb-4 flex items-center gap-2"><i class="fas fa-leaf text-eco-green"></i> Eco Pledge & Awareness</h3>
+            <div class="bg-white p-4 rounded-2xl shadow-float border border-eco-green/20 space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-eco-green/10 text-eco-green flex items-center justify-center shrink-0"><i class="fas fa-trash-alt"></i></div>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-alpine-dark">Take the "No Litter" Pledge</p>
+                        <p class="text-xs text-gray-500">Help preserve the pristine beauty of Devbhoomi.</p>
+                    </div>
+                    <button onclick="showToast('Pledge taken! Thank you.')" class="text-xs text-eco-green font-bold shrink-0 bg-eco-green/20 px-3 py-1.5 rounded-full">Pledge</button>
+                </div>
+                <div class="flex items-center gap-3 border-t border-gray-100 pt-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0"><i class="fas fa-bolt"></i></div>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-alpine-dark">Check High-Altitude Safety</p>
+                        <p class="text-xs text-gray-500">Read our guide on AMS and mountain best practices.</p>
+                    </div>
+                    <button onclick="showToast('Opening Safety Guide...')" class="text-xs text-alpine-dark font-bold shrink-0 bg-gray-100 px-3 py-1.5 rounded-full"><i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+        </div>
+        <div class="px-5">
+            <h3 class="text-lg font-bold text-alpine-dark font-serif mb-4 flex items-center gap-2"><i class="fas fa-trophy text-gold-accent"></i> Explorer Challenges</h3>
+            <div class="bg-white p-4 rounded-2xl shadow-float border border-gray-100 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-eco-green/10 text-eco-green flex items-center justify-center"><i class="fas fa-camera"></i></div>
+                        <div><p class="font-bold text-sm text-alpine-dark">Capture 5 Unique Views</p><p class="text-xs text-gray-500">Progress: 3/5</p></div>
+                    </div>
+                    <button class="text-sm font-bold text-alpine-dark bg-gold-accent/20 px-3 py-1.5 rounded-full" onclick="showToast('Challenge Progress Updated')">Earn XP</button>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center"><i class="fas fa-route"></i></div>
+                        <div><p class="font-bold text-sm text-alpine-dark">Complete Nag Tibba Trek</p><p class="text-xs text-gray-500">Status: Pending</p></div>
+                    </div>
+                    <button class="text-sm font-bold text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full" disabled>Locked</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="pl-5">
+            <div class="flex items-center justify-between pr-5 mb-3">
+                <h3 class="text-lg font-bold text-alpine-dark font-serif">Discover by Vibe</h3>
+            </div>
+            <div class="flex gap-3 overflow-x-auto no-scrollbar pr-5 pb-2">
+                <button onclick="filterDestinations('All', event)" class="vibe-chip px-5 py-2.5 rounded-full text-xs font-bold shadow-md whitespace-nowrap active:scale-95 transition-transform">All</button>
+                <button onclick="filterDestinations('Spiritual', event)" class="vibe-chip px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-xs font-bold shadow-sm whitespace-nowrap active:scale-95 transition-transform">Spiritual <i class="fas fa-om ml-1 text-orange-500"></i></button>
+                <button onclick="filterDestinations('Adventure', event)" class="vibe-chip px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-xs font-bold shadow-sm whitespace-nowrap active:scale-95 transition-transform">Adventure <i class="fas fa-hiking ml-1 text-green-500"></i></button>
+                <button onclick="filterDestinations('Chill', event)" class="vibe-chip px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-xs font-bold shadow-sm whitespace-nowrap active:scale-95 transition-transform">Chill <i class="fas fa-coffee ml-1 text-yellow-700"></i></button>
+                <button onclick="filterDestinations('Nature', event)" class="vibe-chip px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-xs font-bold shadow-sm whitespace-nowrap active:scale-95 transition-transform">Nature <i class="fas fa-leaf ml-1 text-eco-green"></i></button>
+            </div>
+        </div>
+
+        <div class="px-5 relative group min-h-[260px]">
+            <div id="destinations-container" class="overflow-x-auto no-scrollbar snap-x-mandatory flex gap-4 pb-4 px-1">
+                </div>
+        </div>
+
+        <div class="px-5">
+            <h3 class="text-lg font-bold text-alpine-dark font-serif mb-4">Taste of Himalayas</h3>
+            <div id="food-container" class="overflow-x-auto snap-x-mandatory no-scrollbar flex gap-4 pb-4">
+                </div>
+        </div>
+    </div>
+
+    <div id="view-guides" class="view-section max-w-md mx-auto pt-28 px-5 pb-28 min-h-screen bg-paper-bg">
+        <h2 class="text-3xl font-serif font-bold mb-2 text-alpine-dark">Services</h2>
+        <p class="text-sm text-gray-500 mb-6">Expert guides, curated treks, and verified rentals.</p>
+
+        <div class="relative mb-4 group">
+            <i class="fas fa-search absolute left-4 top-3.5 text-gray-400 group-focus-within:text-alpine-dark transition-colors"></i>
+            <input id="guide-search" oninput="applyGuideFilters()" placeholder="Search rafting, guides, bikes..." class="w-full pl-10 pr-4 py-3 rounded-2xl border border-gray-200 bg-white text-sm focus:outline-none focus:border-alpine-dark transition-all shadow-sm">
+        </div>
+
+        <div class="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-1">
+            <select id="guide-type-filter" onchange="applyGuideFilters()" class="px-4 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-700 outline-none">
+                <option value="all">All Services</option>
+                <option value="guides">Guides</option>
+                <option value="treks">Treks</option>
+                <option value="rentals">Rentals</option>
+            </select>
+            <button class="px-4 py-2 rounded-xl bg-white border border-gray-200 text-xs font-bold text-gray-700 whitespace-nowrap">Verified Only</button>
+        </div>
+
+        <div id="guides-pane" class="space-y-4"></div>
+        <div id="treks-pane" class="space-y-4 hidden"></div>
+        <div id="rentals-pane" class="space-y-4 hidden"></div>
+    </div>
+
+    <div id="view-profile" class="view-section max-w-md mx-auto pt-28 px-5 pb-28 min-h-screen bg-paper-bg">
+        <div class="text-center mb-8">
+            <div class="relative w-28 h-28 mx-auto mb-4">
+                <div class="absolute inset-0 rounded-full border-2 border-dashed border-gold-accent animate-spin-slow"></div>
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80" class="w-full h-full rounded-full object-cover border-4 border-white shadow-lg relative z-10">
+                <div class="absolute bottom-0 right-0 z-20 bg-alpine-dark text-white text-xs font-bold px-2 py-0.5 rounded-full border border-white">Lvl 5</div>
+            </div>
+            <h2 class="text-2xl font-serif font-bold text-alpine-dark">John Traveller</h2>
+            <p class="text-sm text-gray-500">Rishikesh • Member since '23</p>
+        </div>
+
+        <div class="bg-gradient-to-r from-alpine-dark to-alpine-light rounded-3xl p-5 text-white shadow-lg mb-6 relative overflow-hidden">
+            <div class="absolute right-0 top-0 opacity-10 text-9xl"><i class="fas fa-qrcode"></i></div>
+            <div class="relative z-10">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-[10px] uppercase tracking-widest opacity-70">Official Yatra Pass</p>
+                        <h3 class="text-xl font-serif font-bold">Char Dham 2025</h3>
+                    </div>
+                    <div class="bg-white p-1 rounded-lg"><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=DevbhoomiElite" class="w-12 h-12"></div>
+                </div>
+                <div class="flex gap-4 text-xs opacity-90">
+                    <div><p class="opacity-60">Status</p><p class="font-bold text-eco-green">Active</p></div>
+                    <div><p class="opacity-60">Valid Thru</p><p class="font-bold">Nov 30</p></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 mb-6">
+            <h3 class="font-bold text-lg text-alpine-dark mb-4 flex items-center gap-2"><i class="fas fa-award text-gold-accent"></i> My Achievements (11)</h3>
+            <div id="badges-container" class="grid grid-cols-4 gap-4">
+                </div>
+            <button class="w-full mt-4 py-2 text-sm font-bold text-alpine-dark bg-gold-accent/20 rounded-xl" onclick="showToast('More badges coming soon!')">View All Badges</button>
+        </div>
+        
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+            <button class="w-full py-3 flex items-center justify-between" onclick="showToast('Opening Itinerary...')">
+                <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fas fa-map-location-dot"></i></div><span class="font-semibold text-alpine-dark">My Itinerary</span></div>
+                <i class="fas fa-chevron-right text-gray-300"></i>
+            </button>
+            <div class="h-px bg-gray-100 my-1"></div>
+            <button class="w-full py-3 flex items-center justify-between" onclick="showToast('Opening Offline Maps...')">
+                <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center"><i class="fas fa-download"></i></div><span class="font-semibold text-alpine-dark">Offline Maps</span></div>
+                <i class="fas fa-chevron-right text-gray-300"></i>
+            </button>
+        </div>
+    </div>
+
+    <nav class="fixed bottom-0 inset-x-0 z-50 pb-safe pointer-events-none">
+        <div class="max-w-md mx-auto relative pointer-events-auto">
+            <div class="mx-4 mb-4 h-16 bg-white/90 backdrop-blur-xl rounded-[24px] shadow-glass border border-white/50 flex justify-around items-center px-1 relative z-20">
+                <button class="nav-item active-nav flex-1 flex flex-col items-center gap-1 active:scale-90 transition-transform" data-view="home" onclick="switchView('home', this)">
+                    <i class="fas fa-compass text-xl"></i>
+                    <span class="text-[9px] font-bold tracking-widest">HOME</span>
+                </button>
+                <button class="nav-item text-gray-400 flex-1 flex flex-col items-center gap-1 active:scale-90 transition-transform" data-view="map" onclick="showToast('Opening Maps Module...')">
+                    <i class="fas fa-map text-xl"></i>
+                    <span class="text-[9px] font-bold tracking-widest">MAP</span>
+                </button>
+                <div class="relative -top-6 w-16 flex justify-center">
+                    <button class="w-16 h-16 bg-danger text-white rounded-full shadow-lg shadow-red-500/40 flex items-center justify-center text-2xl border-[4px] border-paper-bg active:scale-90 animate-pulse-slow" onclick="showSOS()">
+                        <i class="fas fa-shield-alt"></i>
+                    </button>
+                </div>
+                <button class="nav-item text-gray-400 flex-1 flex flex-col items-center gap-1 active:scale-90 transition-transform" data-view="guides" onclick="switchView('guides', this)">
+                    <i class="fas fa-route text-xl"></i>
+                    <span class="text-[9px] font-bold tracking-widest">SERVICES</span>
+                </button>
+                <button class="nav-item text-gray-400 flex-1 flex flex-col items-center gap-1 active:scale-90 transition-transform" data-view="profile" onclick="switchView('profile', this)">
+                    <i class="far fa-user-circle text-xl"></i>
+                    <span class="text-[9px] font-bold tracking-widest">ME</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div id="sos-modal" class="fixed inset-0 z-[5000] bg-danger/95 backdrop-blur-xl flex items-center justify-center p-5 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white w-full max-w-sm rounded-[32px] overflow-hidden relative shadow-2xl animate-fade-in">
+            <div class="bg-gradient-to-r from-red-600 to-red-500 p-5 flex justify-between items-center text-white">
+                <h2 class="font-black text-xl flex items-center gap-2 italic tracking-wider"><i class="fas fa-exclamation-triangle"></i> EMERGENCY SOS</h2>
+                <button onclick="closeSOS()" class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 active:scale-90"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-6">
+                <button id="siren-btn" onclick="toggleSiren()" class="w-full h-36 rounded-[24px] bg-red-50 border-4 border-red-100 flex flex-col items-center justify-center gap-3 group active:scale-95 transition-all relative overflow-hidden shadow-inner">
+                    <div class="absolute inset-0 bg-red-600 opacity-0 group-hover:opacity-5 transition-opacity"></div>
+                    <div class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300"><i class="fas fa-bullhorn text-4xl text-red-600 animate-pulse"></i></div>
+                    <div class="text-center"><span class="block font-black text-2xl text-red-600 uppercase tracking-widest">Loud Siren</span><span class="text-[10px] text-red-400 font-bold uppercase tracking-wide">Tap to Alert Surroundings</span></div>
+                </button>
+                <div class="grid grid-cols-3 gap-3">
+                    <button onclick="callEmergency('112')" class="aspect-square bg-gray-50 rounded-2xl border border-gray-100 flex flex-col items-center justify-center gap-2 active:bg-blue-50 active:border-blue-200 transition-colors"><div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shadow-sm"><i class="fas fa-user-shield"></i></div><span class="text-[10px] font-bold text-gray-600 uppercase">Police</span></button>
+                    <button onclick="callEmergency('108')" class="aspect-square bg-gray-50 rounded-2xl border border-gray-100 flex flex-col items-center justify-center gap-2 active:bg-red-50 active:border-red-200 transition-colors"><div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center shadow-sm"><i class="fas fa-ambulance"></i></div><span class="text-[10px] font-bold text-gray-600 uppercase">Medical</span></button>
+                    <button onclick="shareLocation()" class="aspect-square bg-gray-50 rounded-2xl border border-gray-100 flex flex-col items-center justify-center gap-2 active:bg-green-50 active:border-green-200 transition-colors"><div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center shadow-sm"><i class="fab fa-whatsapp text-lg"></i></div><span class="text-[10px] font-bold text-gray-600 uppercase">Share Loc</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="detail-modal" class="fixed inset-0 bg-black/20 z-[60] backdrop-blur-sm hidden transition-opacity duration-300 opacity-0" onclick="closeDetail()">
+        <div class="absolute bottom-0 inset-x-0 h-[85vh] bg-white rounded-t-[40px] shadow-2xl transform translate-y-full transition-transform duration-500 flex flex-col" id="detail-sheet" onclick="event.stopPropagation()">
+            <div class="relative h-[40vh] shrink-0 w-full">
+                <img id="detail-img" src="" class="w-full h-full object-cover rounded-t-[40px]">
+                <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60 rounded-t-[40px]"></div>
+                <button onclick="closeDetail()" class="absolute top-6 right-6 w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/30 active:scale-90 transition-transform"><i class="fas fa-times"></i></button>
+                <div class="absolute bottom-6 left-8 right-8 text-white"><span id="detail-loc" class="text-xs font-bold uppercase tracking-widest opacity-80 mb-2 block">Location</span><h2 id="detail-title" class="text-4xl font-serif font-bold leading-tight drop-shadow-lg">Title</h2></div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-8 pb-28 no-scrollbar bg-white -mt-6 rounded-t-[32px] relative z-10">
+                <div class="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-8"></div>
+                <div class="grid grid-cols-4 gap-2 mb-8">
+                    <div class="text-center p-2 bg-gray-50 rounded-2xl"><p class="text-[10px] text-gray-400 uppercase">Dist</p><p class="font-bold text-alpine-dark text-xs" id="detail-dist">--</p></div>
+                    <div class="text-center p-2 bg-gray-50 rounded-2xl"><p class="text-[10px] text-gray-400 uppercase">Alt</p><p class="font-bold text-alpine-dark text-xs" id="detail-gain">--</p></div>
+                    <div class="text-center p-2 bg-gray-50 rounded-2xl"><p class="text-[10px] text-gray-400 uppercase">Time</p><p class="font-bold text-alpine-dark text-xs" id="detail-days">--</p></div>
+                    <div class="text-center p-2 bg-gray-50 rounded-2xl"><p class="text-[10px] text-gray-400 uppercase">Temp</p><p class="font-bold text-alpine-dark text-xs">12°C</p></div>
+                </div>
+                <h3 class="font-bold text-lg text-alpine-dark mb-2">About</h3>
+                <p class="text-gray-600 text-sm leading-relaxed mb-6" id="detail-desc">Explore the serene landscapes of Uttarakhand. This location offers spiritual peace and breathtaking Himalayan views.</p>
+            </div>
+            <div class="absolute bottom-0 inset-x-0 p-6 bg-white border-t border-gray-100">
+                <button class="w-full py-4 bg-alpine-dark text-white font-bold rounded-2xl shadow-xl active:scale-95 transition-transform" onclick="showToast('Booking Initiated')">Book Guided Tour</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ai-modal" class="fixed inset-0 z-[2000] bg-black/80 backdrop-blur-md flex items-center justify-center p-5 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white w-full max-w-sm rounded-[32px] p-8 text-center relative overflow-hidden shadow-2xl transform transition-all scale-95">
+            <button onclick="closeAI()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+            <div id="ai-thinking" class="py-12">
+                <div class="w-20 h-20 mx-auto bg-purple-50 rounded-full flex items-center justify-center text-purple-600 text-3xl mb-6 shadow-ai-glow animate-pulse"><i class="fas fa-brain"></i></div>
+                <h3 class="text-2xl font-bold text-alpine-dark mb-2">DevAI is thinking...</h3>
+            </div>
+               <div id="ai-result" class="hidden text-left animate-fade-in">
+                   <h3 class="text-xl font-bold text-alpine-dark mb-4">Recommended Plan</h3>
+                   </div>
+        </div>
+    </div>
+    
+    <script>
+        // ====================================================================
+        // 1. DATA MODELS
+        // ====================================================================
+        const DESTINATIONS = [
+            { title: "Kedarnath Temple", loc: "Rudraprayag", img: "https://images.unsplash.com/photo-1626488775435-08e085c88e89?auto=format&fit=crop&w=600&q=80", vibe: "Spiritual", dist: "16km Trek", gain: "3583m", days: "2 Days", desc: "One of the twelve Jyotirlingas of Shiva, set against the stunning backdrop of the Kedarnath range. A challenging yet deeply rewarding pilgrimage.", start: "Gaurikund" },
+            { title: "Valley of Flowers", loc: "Chamoli", img: "https://images.unsplash.com/photo-1628107590861-1c390a886d34?auto=format&fit=crop&w=600&q=80", vibe: "Nature", dist: "17km Trek", gain: "3658m", days: "3 Days", desc: "A World Heritage Site known for its meadows of endemic alpine flowers and diverse fauna. It is open only from June to October, providing a breathtaking, eco-sensitive experience.", start: "Govindghat" },
+            { title: "Rishikesh Rafting", loc: "Rishikesh", img: "https://images.unsplash.com/photo-1594924765796-0359f80a22f6?auto=format&fit=crop&w=600&q=80", vibe: "Adventure", dist: "35km River", gain: "400m", days: "1 Day", desc: "The 'Yoga Capital of the World' is also India's top destination for White Water Rafting on the Ganges river. Thrilling rapids guaranteed.", start: "Shivpuri" },
+            { title: "Landour Bazaar", loc: "Mussoorie", img: "https://images.unsplash.com/photo-1595183864506-6c9d0d3b6a94?auto=format&fit=crop&w=600&q=80", vibe: "Chill", dist: "2km Stroll", gain: "2000m", days: "Half Day", desc: "A peaceful, colonial-era military cantonment town near Mussoorie, offering quiet charm, famous bakeries, and stunning views of the Himalayas.", start: "Mussoorie" },
+            { title: "Gangotri Glacier", loc: "Uttarkashi", img: "https://images.unsplash.com/photo-1517873550824-3408f652b113?auto=format&fit=crop&w=600&q=80", vibe: "Spiritual", dist: "18km Trek", gain: "3048m", days: "3 Days", desc: "The origin of the holy River Ganga and one of the four sites in the Char Dham pilgrimage circuit. Offers incredible views and spiritual solace.", start: "Gangotri" },
+        ];
+
+        const FOOD_ITEMS = [
+            { name: "Aloo Ke Gutke", img: "https://images.unsplash.com/photo-1627092415178-0138944d1877?w=300&q=80", desc: "Spiced potato preparation" },
+            { name: "Kafuli", img: "https://images.unsplash.com/photo-1587326463999-52e428e08b1d?w=300&q=80", desc: "Spinach & fenugreek dish" },
+            { name: "Bhang Ki Chutney", img: "https://images.unsplash.com/photo-1563729784347-f32a2656360c?w=300&q=80", desc: "Hemp seed chutney" },
+            { name: "Mandua Roti", img: "https://images.unsplash.com/photo-1546069901-ba95156f4d0c?w=300&q=80", desc: "Finger millet flatbread" },
+            { name: "Dubuk", img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=300&q=80", desc: "Lentil-based local delicacy" },
+            { name: "Bal Mithai", img: "https://images.unsplash.com/photo-1540326079234-97223b28b76d?w=300&q=80", desc: "Brown chocolate-like fudge" },
+        ];
+
+        const SERVICES = [
+            { type: "guides", name: "Himalayan Sherpa Treks", loc: "Joshimath", price: "₹2,500/day", rating: 4.9, desc: "Certified local guides for Nanda Devi treks.", verified: true, img: "https://images.unsplash.com/photo-1517726710492-3c2d46e2794a?w=100&h=100&fit=crop&q=80" },
+            { type: "treks", name: "Dayara Bugyal Winter Trek", loc: "Barsu", price: "₹8,000", rating: 4.8, desc: "4-day snow trek. Includes meals and tents.", verified: true, img: "https://images.unsplash.com/photo-1596547665275-0f0c058c4f28?w=100&h=100&fit=crop&q=80" },
+            { type: "rentals", name: "Royal Enfield Rentals", loc: "Dehradun", price: "₹1,500/day", rating: 4.5, desc: "High-altitude ready motorcycles and gear.", verified: false, img: "https://images.unsplash.com/photo-1558231908-7243b6c28f09?w=100&h=100&fit=crop&q=80" },
+            { type: "guides", name: "Ganga River Rafting Team", loc: "Rishikesh", price: "₹1,200/person", rating: 4.7, desc: "Licensed river guides. Safety first!", verified: true, img: "https://images.unsplash.com/photo-1594924765796-0359f80a22f6?w=100&h=100&fit=crop&q=80" },
+            { type: "treks", name: "Har Ki Dun Easy Trek", loc: "Sankri", price: "₹6,500", rating: 4.6, desc: "Beginner-friendly 5-day family trek.", verified: false, img: "https://images.unsplash.com/photo-1599429532822-799f90264102?w=100&h=100&fit=crop&q=80" },
+            { type: "rentals", name: "Camping Gear Co.", loc: "Rishikesh", price: "₹450/day", rating: 4.9, desc: "Tents, sleeping bags, and trekking poles.", verified: true, img: "https://images.unsplash.com/photo-1525883833446-2487e8334204?w=100&h=100&fit=crop&q=80" },
+        ];
+
+        const BADGES = [
+            { icon: "fa-mountain", color: "text-alpine-dark", title: "Peak Voyager", desc: "Crossed 3000m altitude" },
+            { icon: "fa-sun", color: "text-yellow-500", title: "Early Bird", desc: "Captured 3 Sunrises" },
+            { icon: "fa-seedling", color: "text-eco-green", title: "Eco Warrior", desc: "Completed 1 Eco Pledge" },
+            { icon: "fa-star", color: "text-red-500", title: "Char Dham Starter", desc: "Visited 1 major temple" },
+            { icon: "fa-map-signs", color: "text-blue-500", title: "Trail Blazer", desc: "Logged 50km on trails" },
+            { icon: "fa-camera", color: "text-terracotta", title: "Shutterbug", desc: "Uploaded 10 photos" },
+            { icon: "fa-mug-hot", color: "text-brown-600", title: "Chai Lover", desc: "Rated 5 local cafes" },
+            { icon: "fa-om", color: "text-gold-accent", title: "Meditation Master", desc: "Visited a Yoga Ashram" },
+        ];
+
+        // ====================================================================
+        // 2. CORE UTILITY FUNCTIONS (Placeholders)
+        // ====================================================================
+
+        function showToast(message) {
+            alert(message); // Simple alert for demo purposes
+        }
+
+        function switchView(viewId, element) {
+            // Remove active state from all views and nav items
+            document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active-nav');
+                item.classList.remove('text-alpine-dark');
+                item.classList.add('text-gray-400');
+            });
+
+            // Set active state for the current view and nav item
+            const viewElement = document.getElementById(`view-${viewId}`);
+            if (viewElement) {
+                viewElement.classList.add('active');
+                viewElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            if (element) {
+                element.classList.add('active-nav');
+                element.classList.remove('text-gray-400');
+                element.classList.add('text-alpine-dark');
+            }
+        }
+
+        function triggerAI() {
+            showToast("AI Planning is currently simulated. Click OK to see result.");
+            document.getElementById('ai-modal').classList.remove('hidden');
+            setTimeout(() => { 
+                document.getElementById('ai-modal').classList.remove('opacity-0');
+                // Simulate AI thinking delay
+                setTimeout(() => {
+                    document.getElementById('ai-thinking').classList.add('hidden');
+                    const resultDiv = document.getElementById('ai-result');
+                    resultDiv.innerHTML = `
+                        <h3 class="text-xl font-bold text-alpine-dark mb-4">Recommended Plan: Char Dham Express (4 Days)</h3>
+                        <ul class="space-y-3 text-sm text-gray-600">
+                            <li class="flex items-start gap-3"><div class="w-2 h-2 bg-gold-accent rounded-full mt-2 shrink-0"></div><p><strong class="text-alpine-dark">Day 1:</strong> Fly to Dehradun, drive to Rishikesh. Attend Ganga Aarti.</p></li>
+                            <li class="flex items-start gap-3"><div class="w-2 h-2 bg-gold-accent rounded-full mt-2 shrink-0"></div><p><strong class="text-alpine-dark">Day 2:</strong> Kedarnath Darshan (helicopter option). Altitude acclimatization is key.</p></li>
+                            <li class="flex items-start gap-3"><div class="w-2 h-2 bg-gold-accent rounded-full mt-2 shrink-0"></div><p><strong class="text-alpine-dark">Day 3:</strong> Drive to Badrinath. Visit Mana Village, last village before border.</p></li>
+                            <li class="flex items-start gap-3"><div class="w-2 h-2 bg-gold-accent rounded-full mt-2 shrink-0"></div><p><strong class="text-alpine-dark">Day 4:</strong> Morning prayers, drive back to Dehradun.</p></li>
+                        </ul>
+                        <div class="mt-6 p-4 bg-eco-green/10 rounded-xl text-xs">
+                            <i class="fas fa-leaf text-eco-green mr-2"></i> 
+                            <strong>Eco Tip:</strong> Carry a reusable water bottle. Single-use plastic is banned in many high-altitude zones.
+                        </div>
+                        <button class="mt-6 w-full py-3 bg-gold-accent text-alpine-dark font-bold rounded-xl shadow-md">Export to Itinerary</button>
+                    `;
+                    resultDiv.classList.remove('hidden');
+                }, 1000); 
+            }, 10);
+        }
+        function closeAI() {
+            const modal = document.getElementById('ai-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => { 
+                modal.classList.add('hidden'); 
+                document.getElementById('ai-thinking').classList.remove('hidden');
+                document.getElementById('ai-result').classList.add('hidden');
+                document.getElementById('ai-result').innerHTML = '';
+            }, 300);
+        }
+
+        // SOS functions (from original HTML)
+        function showSOS(){ const modal = document.getElementById('sos-modal'); if (modal) { modal.classList.remove('hidden'); setTimeout(()=> modal.classList.remove('opacity-0'), 10); } }
+        function closeSOS(){ const modal = document.getElementById('sos-modal'); if (modal) { modal.classList.add('opacity-0'); setTimeout(()=> modal.classList.add('hidden'),300); } }
+        function callEmergency(number){ showToast(`Calling Emergency Service: ${number}...`); }
+        function shareLocation(){ showToast("Sharing current GPS location with emergency contacts..."); }
+        function toggleSiren(){ 
+            const btn = document.getElementById('siren-btn');
+            btn.classList.toggle('siren-active');
+            showToast(btn.classList.contains('siren-active') ? 'Loud Siren ON' : 'Loud Siren OFF');
+        }
+        function openCamera(){ showToast('Opening Camera and Geo-tagging...'); }
+        function toggleRadio(){ 
+            const player = document.getElementById('radio-player');
+            player.classList.toggle('hidden');
+            document.getElementById('radio-icon').classList.toggle('fa-spin-pulse');
+        }
+
+        // ====================================================================
+        // 3. HOME VIEW RENDERING LOGIC
+        // ====================================================================
+
+        function renderDestinations(data) {
+            const container = document.getElementById('destinations-container');
+            container.innerHTML = data.map(p => `
+                <div class="shrink-0 w-[80vw] sm:w-[280px] snap-center rounded-3xl overflow-hidden shadow-float cursor-pointer group bg-surface" onclick="showDetail(${encodeURIComponent(JSON.stringify(p))})">
+                    <div class="h-40 relative overflow-hidden">
+                        <img src="${p.img}" class="w-full h-full object-cover zoom-img" alt="${p.title}">
+                        <div class="absolute inset-0 bg-card-gradient"></div>
+                        <div class="absolute bottom-0 left-0 p-4 text-white">
+                            <span class="text-[10px] font-bold uppercase tracking-widest bg-black/30 backdrop-blur-sm px-2 py-0.5 rounded-full">${p.vibe}</span>
+                            <h4 class="text-xl font-serif font-bold mt-1 leading-tight">${p.title}</h4>
+                        </div>
+                        <button class="heart-btn absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm hover:text-red-400 transition-colors" onclick="event.stopPropagation(); this.classList.toggle('active')">
+                            <i class="far fa-heart"></i>
+                        </button>
+                    </div>
+                    <div class="p-3">
+                        <p class="text-xs text-gray-500 font-semibold flex items-center"><i class="fas fa-location-dot text-gold-accent mr-2"></i> ${p.loc} • ${p.gain}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderFood(data) {
+            const container = document.getElementById('food-container');
+            container.innerHTML = data.map(f => `
+                <div class="shrink-0 w-32 snap-center cursor-pointer" onclick="showToast('Tasting ${f.name}!')">
+                    <div class="w-32 h-32 rounded-2xl overflow-hidden relative shadow-md">
+                        <img src="${f.img}" class="w-full h-full object-cover group-hover:scale-105 transition-transform" alt="${f.name}">
+                        <div class="absolute inset-0 bg-black/20"></div>
+                    </div>
+                    <p class="text-sm font-bold text-alpine-dark mt-2 text-center">${f.name}</p>
+                    <p class="text-[10px] text-gray-500 text-center">${f.desc}</p>
+                </div>
+            `).join('');
+        }
+
+        function filterDestinations(vibe, event) {
+            const chips = document.querySelectorAll('.vibe-chip');
+            chips.forEach(chip => {
+                chip.classList.remove('bg-alpine-dark', 'text-white');
+                chip.classList.add('bg-white', 'border', 'border-gray-200', 'text-gray-600', 'shadow-sm');
+            });
+            
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('bg-alpine-dark', 'text-white');
+                event.currentTarget.classList.remove('bg-white', 'border', 'border-gray-200', 'text-gray-600', 'shadow-sm');
+            } else if (vibe === 'All') { // Initial setup
+                document.querySelector('.vibe-chip').classList.add('bg-alpine-dark', 'text-white');
+                document.querySelector('.vibe-chip').classList.remove('bg-white', 'border', 'border-gray-200', 'text-gray-600', 'shadow-sm');
+            }
+
+
+            let filteredData = DESTINATIONS;
+            if (vibe !== 'All') {
+                filteredData = DESTINATIONS.filter(d => d.vibe === vibe);
+            }
+            renderDestinations(filteredData);
+        }
+
+        function renderHomeHighlights() {
+            filterDestinations('All');
+            renderFood(FOOD_ITEMS);
+        }
+
+        function showDetail(pJson) {
+            const p = JSON.parse(decodeURIComponent(pJson));
+            document.getElementById('detail-title').innerText = p.title;
+            document.getElementById('detail-loc').innerText = p.loc.toUpperCase();
+            document.getElementById('detail-img').src = p.img;
+            document.getElementById('detail-desc').innerText = p.desc;
+            document.getElementById('detail-dist').innerText = p.dist;
+            document.getElementById('detail-gain').innerText = p.gain;
+            document.getElementById('detail-days').innerText = p.days;
+
+            const modal = document.getElementById('detail-modal');
+            modal.classList.remove('hidden', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('detail-sheet').classList.remove('translate-y-full');
+            }, 10);
+        }
+
+        function closeDetail() { 
+            document.getElementById('detail-sheet').classList.add('translate-y-full'); 
+            setTimeout(() => {
+                const modal = document.getElementById('detail-modal');
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }, 300);
+        }
+
+        // ====================================================================
+        // 4. SERVICES VIEW RENDERING LOGIC
+        // ====================================================================
+
+        function renderServiceCard(s) {
+            const isVerified = s.verified ? '<div class="w-6 h-6 rounded-full bg-eco-green/20 text-eco-green flex items-center justify-center shrink-0"><i class="fas fa-check text-xs"></i></div>' : '';
+            const ratingColor = s.rating >= 4.7 ? 'text-green-500' : 'text-orange-500';
+            const ratingIcon = s.rating >= 4.7 ? 'fa-star' : 'fa-star-half-alt';
+
+            return `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-start gap-4 cursor-pointer hover:bg-gray-50 transition-colors" onclick="showToast('Viewing ${s.name} details')">
+                    <div class="w-14 h-14 shrink-0 rounded-xl overflow-hidden">
+                        <img src="${s.img}" class="w-full h-full object-cover" alt="${s.name}">
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-sm text-alpine-dark">${s.name}</h4>
+                            <span class="text-xs font-bold text-alpine-dark">${s.price}</span>
+                        </div>
+                        <p class="text-xs text-gray-500 my-1">${s.desc}</p>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="text-xs font-bold ${ratingColor}"><i class="fas ${ratingIcon} mr-1"></i> ${s.rating}</span>
+                            <span class="text-xs text-gray-400">| ${s.loc}</span>
+                            ${isVerified}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function applyGuideFilters() {
+            const typeFilter = document.getElementById('guide-type-filter').value;
+            const searchFilter = document.getElementById('guide-search').value.toLowerCase();
+            
+            // Filter data
+            const filteredData = SERVICES.filter(s => {
+                const typeMatch = typeFilter === 'all' || s.type === typeFilter;
+                const searchMatch = s.name.toLowerCase().includes(searchFilter) || s.desc.toLowerCase().includes(searchFilter) || s.loc.toLowerCase().includes(searchFilter);
+                return typeMatch && searchMatch;
+            });
+
+            // Prepare segregated data
+            const guides = filteredData.filter(s => s.type === 'guides');
+            const treks = filteredData.filter(s => s.type === 'treks');
+            const rentals = filteredData.filter(s => s.type === 'rentals');
+
+            // Render to panes
+            document.getElementById('guides-pane').innerHTML = guides.map(renderServiceCard).join('');
+            document.getElementById('treks-pane').innerHTML = treks.map(renderServiceCard).join('');
+            document.getElementById('rentals-pane').innerHTML = rentals.map(renderServiceCard).join('');
+
+            // Handle visibility based on type filter
+            document.getElementById('guides-pane').classList.add('hidden');
+            document.getElementById('treks-pane').classList.add('hidden');
+            document.getElementById('rentals-pane').classList.add('hidden');
+            
+            if (typeFilter === 'all' || typeFilter === 'guides') { document.getElementById('guides-pane').classList.remove('hidden'); }
+            if (typeFilter === 'all' || typeFilter === 'treks') { document.getElementById('treks-pane').classList.remove('hidden'); }
+            if (typeFilter === 'all' || typeFilter === 'rentals') { document.getElementById('rentals-pane').classList.remove('hidden'); }
+        }
+
+        // ====================================================================
+        // 5. PROFILE VIEW RENDERING LOGIC
+        // ====================================================================
+
+        function renderBadges() {
+            const container = document.getElementById('badges-container');
+            container.innerHTML = BADGES.slice(0, 8).map(b => `
+                <div class="text-center cursor-pointer" onclick="showToast('${b.title}: ${b.desc}')">
+                    <div class="w-12 h-12 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center mx-auto mb-1">
+                        <i class="fas ${b.icon} text-xl ${b.color}"></i>
+                    </div>
+                    <p class="text-[10px] font-bold text-alpine-dark">${b.title}</p>
+                </div>
+            `).join('');
+        }
+
+        // ====================================================================
+        // 6. INITIALIZATION
+        // ====================================================================
+
+        window.onload = ()=> {
+            const homeBtn = document.querySelector('.nav-item[data-view="home"]');
+            switchView('home', homeBtn);
+            
+            // Hide splash screen after delay
+            setTimeout(()=> { 
+                document.getElementById('splash-screen').classList.add('hidden-splash'); 
+                document.body.style.overflow='auto'; 
+            }, 1200);
+
+            // Initial rendering of dynamic content
+            renderHomeHighlights();
+            applyGuideFilters();
+            renderBadges();
+        };
+    </script>
+</body>
+</html>

@@ -1105,62 +1105,137 @@
 
         /* ensure modal content scrolls if long */
         .modal-content.more { max-height:70vh; overflow:auto; }
+
+        /* MAP SCREEN */
+        .map-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 80;
+            display: none;
+            flex-direction: column;
+            background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98));
+        }
+
+        .map-screen.active {
+            display: flex;
+        }
+
+        .map-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1.25rem;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(4,120,87,0.08);
+            z-index: 90;
+        }
+
+        .map-back-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(4,120,87,0.08);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            color: var(--primary);
+        }
+
+        #mapContainer {
+            flex: 1;
+            min-height: 0; /* allow flexbox to size properly */
+        }
+
+        /* ensure Leaflet map fits */
+        #map {
+            width: 100%;
+            height: 100%;
+        }
     </style>
 
     <!-- Leaflet CSS (map) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
     <style>
-    /* ...existing styles... */
+    /* Full-bleed hero & slider (remove boxed look) */
+.hero-video,
+.auto-slider-container {
+  width: calc(100% + 2.5rem);
+  margin-left: -1.25rem;
+  margin-right: -1.25rem;
+  border-radius: 20px;
+  box-shadow: 0 18px 40px rgba(4,120,87,0.12);
+  background: transparent;
+}
 
-    /* MAP SCREEN */
-    .map-screen {
-        position: fixed;
-        inset: 0;
-        z-index: 80;
-        display: none;
-        flex-direction: column;
-        background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98));
-    }
+/* Let hero video cover fully (avoid inner white card feel) */
+.section > .hero-video,
+.section > .auto-slider-container {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
 
-    .map-screen.active {
-        display: flex;
-    }
+/* Make explore cards unboxed by default on home explore screen */
+.explore-screen.explore-unboxed .explore-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.explore-screen.explore-unboxed .explore-card-body {
+  padding: 0.9rem 0;
+  background: transparent;
+}
+.explore-screen.explore-unboxed .explore-card-img {
+  border-radius: 14px;
+  height: 160px;
+}
 
-    .map-header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        padding: 0.75rem 1.25rem;
-        background: rgba(255,255,255,0.95);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(4,120,87,0.08);
-        z-index: 90;
-    }
+/* Premium More modal visuals */
+.modal-content.more {
+  max-width: 920px;
+  width: calc(100% - 1.5rem);
+  border-radius: 20px;
+  padding: 1.25rem;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), #f7fffb);
+  box-shadow: 0 28px 60px rgba(4,120,87,0.18);
+  border: 1px solid rgba(16,185,129,0.06);
+}
+.more-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:0.75rem;
+}
+.more-hero {
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+.more-hero .icon {
+  width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;font-size:24px;
+}
+.more-actions { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.6rem; }
 
-    .map-back-btn {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: rgba(4,120,87,0.08);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: none;
-        cursor: pointer;
-        color: var(--primary);
-    }
+/* improved search appearance */
+.search-bar input { cursor:text; background:transparent; }
+.search-active { outline: 2px solid rgba(4,120,87,0.12); box-shadow: 0 8px 24px rgba(4,120,87,0.08); }
 
-    #mapContainer {
-        flex: 1;
-        min-height: 0; /* allow flexbox to size properly */
-    }
+/* mobile performance: reduce heavy effects */
+@media (max-width: 640px) {
+  body::before, .hero-video, .auto-slider-container, .explore-card, .modal-content { backface-visibility: hidden; -webkit-font-smoothing: antialiased; }
+  .section, .header, .modal-content { backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+  .auto-slider-container { height: 48vh; }
+  .explore-card-img { height: 140px; }
+  .btn { padding: 0.7rem 1rem; font-size: 0.9rem; }
+}
 
-    /* ensure Leaflet map fits */
-    #map {
-        width: 100%;
-        height: 100%;
-    }
+/* tiny helper to show 'no-results' message in explore */
+.explore-no-results { padding:1rem; color:var(--text-light); text-align:center; }
     </style>
 
     <!-- Leaflet JS (map) -->
@@ -1568,40 +1643,172 @@
 
   // --- Explore grids population (simple placeholder data) ---
   function populateExploreGrids(){
-    const sample = [
-      { title:'Kempty Falls', subtitle:'Waterfall near Mussoorie' },
-      { title:'Kedarnath Temple', subtitle:'Ancient shrine' },
-      { title:'Naini Lake', subtitle:'Boating & lakeside' },
-      { title:'Valley of Flowers', subtitle:'Alpine meadows' }
-    ];
-    const cats = ['popular','nature','spiritual','treks','stays','culture','food'];
-    cats.forEach(cat => {
-      const grid = document.getElementById(cat + '-grid');
-      if(!grid) return;
-      grid.innerHTML = '';
-      sample.forEach(s => {
-        const el = document.createElement('div');
-        el.className = 'explore-card card';
-        el.innerHTML = `
-          <div class="explore-card-img card-img">${s.title}</div>
-          <div class="explore-card-body card-body">
-            <div class="explore-card-title">${s.title}</div>
-            <div class="explore-card-subtitle">${s.subtitle}</div>
-            <div style="margin-top:auto"></div>
+    // richer dataset for each tab (images are inline SVG placeholders)
+    const placeholderImage = (label, bg='#f0f9ff', fg='#0f172a') => {
+      return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'%3E%3Crect fill='${encodeURIComponent(bg)}' width='1200' height='800'/%3E%3Ctext x='50%25' y='50%25' font-size='36' fill='${encodeURIComponent(fg)}' text-anchor='middle' dy='.3em'%3E${encodeURIComponent(label)}%3C/text%3E%3C/svg%3E`;
+    };
+
+    const datasets = {
+      popular: [
+        { name:'Mussoorie', img: placeholderImage('Mussoorie','#6d28d9','#fff'), rating:4.7, region:'Dehradun • 60 km' },
+        { name:'Rishikesh', img: placeholderImage('Rishikesh','#8b5cf6','#fff'), rating:4.8, region:'Tehri Garhwal • Ganga' },
+        { name:'Nainital', img: placeholderImage('Nainital','#1c70e3','#fff'), rating:4.6, region:'Nainital District • Lake' },
+        { name:'Auli', img: placeholderImage('Auli','#fcd34d','#000'), rating:4.5, region:'Chamoli • Skiing' },
+        { name:'Kedarnath', img: placeholderImage('Kedarnath','#ef4444','#fff'), rating:4.9, region:'Rudraprayag • Pilgrimage' },
+        { name:'Chopta', img: placeholderImage('Chopta','#34d399','#fff'), rating:4.4, region:'Chamoli • Meadows' }
+      ],
+      nature: [
+        { name:'Valley of Flowers', icon:'🌿', desc:'Alpine meadows full of endemic wildflowers.', season:'Jul — Sep' },
+        { name:'Munsiyari', icon:'🌿', desc:'Gateway to Johar valley and high-altitude views.', season:'Apr — Oct' },
+        { name:'Chopta Meadows', icon:'🌿', desc:'Lush meadows, base for Tungnath.', season:'Mar — Nov' },
+        { name:'Pithoragarh', icon:'🌿', desc:'Scenic valleys & Himalayan panoramas.', season:'Apr — Oct' },
+        { name:'Jim Corbett Forest', icon:'🌿', desc:'Wildlife & tiger reserve trails.', season:'Nov — Jun' }
+      ],
+      spiritual: [
+        { name:'Kedarnath', icon:'🛕', timings:'05:00 — 21:00', difficulty:'High' },
+        { name:'Badrinath', icon:'🛕', timings:'04:30 — 20:30', difficulty:'Moderate' },
+        { name:'Jageshwar', icon:'🛕', timings:'06:00 — 19:00', difficulty:'Easy' },
+        { name:'Tungnath', icon:'🛕', timings:'06:00 — 18:00', difficulty:'Moderate' },
+        { name:'Rishikesh (Yoga)', icon:'🛕', timings:'Open all day', difficulty:'Easy' }
+      ],
+      treks: [
+        { name:'Kedarkantha', difficulty:'Moderate', duration:'3–4 days', height:'~12,500 ft' },
+        { name:'Valley of Flowers', difficulty:'Moderate', duration:'4–6 days', height:'~14,000 ft' },
+        { name:'Har Ki Doon', difficulty:'Moderate', duration:'6–7 days', height:'~11,500 ft' },
+        { name:'Nag Tibba', difficulty:'Easy', duration:'1–2 days', height:'~9,915 ft' },
+        { name:'Dodital', difficulty:'Moderate', duration:'3–4 days', height:'~9,000 ft' }
+      ],
+      stays: [
+        { name:'Hillside Resort', price:'₹2,500–4,000', rating:4.3, location:'Mussoorie' },
+        { name:'Riverfront Camps', price:'₹1,200–2,500', rating:4.5, location:'Rishikesh' },
+        { name:'Lakeview Hotel', price:'₹3,000–5,500', rating:4.6, location:'Nainital' },
+        { name:'Basecamp Lodge', price:'₹800–1,800', rating:4.1, location:'Chopta' }
+      ],
+      culture: [
+        { title:'Uttarakhand Festivals', desc:'Local seasonal festivals that celebrate mountain culture.' },
+        { title:'Folk Dances', desc:'Observe Garhwali & Kumaoni folk performances.' },
+        { title:'Local Markets', desc:'Handicrafts, woollens, and regional produce.' },
+        { title:'Handicrafts', desc:'Traditional woodwork, weaving & artifacts.' },
+        { title:'Food & Cuisine', desc:'Regional flavours and street specialities.' }
+      ],
+      food: [
+        { name:'Kafuli', desc:'Spinach & local greens curry — nutritious and warming.' },
+        { name:'Gahat Dal', desc:'Horse gram lentil curry — regional staple.' },
+        { name:'Bhang Ki Chutney', desc:'Spicy chutney from local herbs.' },
+        { name:'Aloo ke Gutke', desc:'Spiced potato dish, Uttarakhand favourite.' },
+        { name:'Bal Mithai', desc:'Traditional sweet from the hills.' }
+      ]
+    };
+
+    // helper to render a card node
+    function createCardHTML(category, item){
+      if(category === 'popular'){
+        return `
+          <div class="explore-card">
+            <div class="explore-card-img" style="background-image:url('${item.img}');background-size:cover;background-position:center"></div>
+            <div class="explore-card-body">
+              <div class="explore-card-title">${item.name}</div>
+              <div class="explore-card-subtitle">${item.region || ''}</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;">
+                <div style="display:flex;gap:.5rem;align-items:center"><div class="explore-rating">⭐ ${item.rating}</div></div>
+                <div style="width:40%"><button class="btn btn-primary" type="button" onclick="openDetail('${item.name.replace(/'/g,"\\'")}','Rating: ${item.rating} • ${item.region || ''}')">Explore</button></div>
+              </div>
+            </div>
           </div>`;
-        // create button explicitly so text is never empty
-        const footer = document.createElement('div');
-        footer.style.marginTop = 'auto';
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-primary';
-        btn.type = 'button';
-        btn.textContent = 'Open';
-        btn.addEventListener('click', ()=> openDetail(s.title, s.subtitle));
-        footer.appendChild(btn);
-        el.querySelector('.explore-card-body').appendChild(footer);
-        grid.appendChild(el);
-      });
+      }
+
+      if(category === 'nature'){
+        return `
+          <div class="explore-card">
+            <div class="explore-card-img card-img" style="display:flex;align-items:center;justify-content:center;font-size:48px">${item.icon || '🌿'}</div>
+            <div class="explore-card-body">
+              <div class="explore-card-title">${item.name}</div>
+              <div class="explore-card-subtitle">${item.desc}</div>
+              <div style="margin-top:1rem;color:var(--text-light);font-weight:700">Best season: ${item.season}</div>
+              <div style="margin-top:.75rem"><button class="btn btn-primary" type="button" onclick="openDetail('${item.name.replace(/'/g,"\\'")}','${item.desc} • Best: ${item.season}')">Explore</button></div>
+            </div>
+          </div>`;
+      }
+
+      if(category === 'spiritual'){
+        return `
+          <div class="explore-card">
+            <div class="explore-card-img card-img" style="display:flex;align-items:center;justify-content:center;font-size:48px">🛕</div>
+            <div class="explore-card-body">
+              <div class="explore-card-title">${item.name}</div>
+              <div class="explore-card-subtitle">Timings: ${item.timings} • Difficulty: ${item.difficulty}</div>
+              <div style="margin-top:.75rem"><button class="btn btn-primary" type="button" onclick="openDetail('${item.name.replace(/'/g,"\\'")}','Timings: ${item.timings} • Difficulty: ${item.difficulty}')">Details</button></div>
+            </div>
+          </div>`;
+      }
+
+      if(category === 'treks'){
+        return `
+          <div class="explore-card">
+            <div class="explore-card-img card-img" style="display:flex;align-items:center;justify-content:center;font-size:42px">🥾</div>
+            <div class="explore-card-body">
+              <div class="explore-card-title">${item.name}</div>
+              <div class="explore-card-subtitle">Difficulty: ${item.difficulty} • Duration: ${item.duration}</div>
+              <div style="margin-top:.5rem;color:var(--text-light)">Approx. Height: ${item.height}</div>
+              <div style="margin-top:.75rem"><button class="btn btn-primary" type="button" onclick="openDetail('${item.name.replace(/'/g,"\\'")}','${item.difficulty} • ${item.duration} • ${item.height}')">View Trek</button></div>
+            </div>
+          </div>`;
+      }
+
+      if(category === 'stays'){
+        return `
+          <div class="explore-card">
+            <div class="explore-card-img card-img" style="display:flex;align-items:center;justify-content:center;font-size:36px">🏨</div>
+            <div class="explore-card-body">
+              <div class="explore-card-title">${item.name}</div>
+              <div class="explore-card-subtitle">${item.location} • ${item.price}</div>
+              <div style="margin-top:1rem;display:flex;justify-content:space-between;align-items:center;">
+                <div class="explore-rating">⭐ ${item.rating}</div>
+                <div style="width:40%"><button class="btn btn-primary" type="button" onclick="openDetail('${item.name.replace(/'/g,"\\'")}','${item.location} • ${item.price} • Rating ${item.rating}')">Book</button></div>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      if(category === 'culture'){
+        return `
+          <div class="explore-card">
+            <div class="explore-card-img card-img" style="display:flex;align-items:center;justify-content:center;font-size:42px">🎭</div>
+            <div class="explore-card-body">
+              <div class="explore-card-title">${item.title}</div>
+              <div class="explore-card-subtitle">${item.desc}</div>
+              <div style="margin-top:.75rem"><button class="btn btn-primary" type="button" onclick="openDetail('${item.title.replace(/'/g,"\\'")}','${item.desc}')">Explore</button></div>
+            </div>
+          </div>`;
+      }
+
+      if(category === 'food'){
+        return `
+          <div class="explore-card">
+            <div class="explore-card-img card-img" style="display:flex;align-items:center;justify-content:center;font-size:36px">🍽️</div>
+            <div class="explore-card-body">
+              <div class="explore-card-title">${item.name}</div>
+              <div class="explore-card-subtitle">${item.desc}</div>
+              <div style="margin-top:.75rem"><button class="btn btn-primary" type="button" onclick="openDetail('${item.name.replace(/'/g,"\\'")}','${item.desc}')">View</button></div>
+            </div>
+          </div>`;
+      }
+
+      return '';
+    }
+
+    Object.keys(datasets).forEach(cat => {
+      const grid = document.getElementById(`${cat}-grid`);
+      if(!grid) return;
+      grid.innerHTML = datasets[cat].map(item => createCardHTML(cat, item)).join('');
     });
+
+    // ensure default visible tab is Popular
+    const activeTabButton = document.querySelector('.explore-tab[data-tab="popular"]');
+    if(activeTabButton) {
+      document.querySelectorAll('.explore-tab').forEach(t => t.classList.toggle('active', t === activeTabButton));
+      switchExploreTab('popular');
+    }
   }
 
   // --- Detail modal helpers ---
@@ -1724,6 +1931,196 @@
       initApp();
     }, { once:true });
   }
+})();
+</script>
+
+<script>
+/* Performance and UX improvements: make search functional, debounce, lazy filter,
+   ensure explore populated on demand, reduce slider work on mobile/touch. */
+
+(function(){
+  // debounce helper
+  function debounce(fn, wait){ let t; return function(...a){ clearTimeout(t); t = setTimeout(()=> fn.apply(this,a), wait); }; }
+
+  // ensure explore grids exist/populated
+  function ensureExplorePopulated(){
+    if(window._explorePopulated) return;
+    if(typeof populateExploreGrids === 'function'){
+      try{ populateExploreGrids(); window._explorePopulated = true; }catch(e){ console.error(e); }
+    }
+  }
+
+  // wire search bar to filter explore cards
+  const searchBar = document.querySelector('.search-bar input');
+  if(searchBar){
+    searchBar.removeAttribute('readonly');
+    searchBar.placeholder = 'Search places, treks, stays...';
+    // focus behavior: open explore and focus input
+    document.querySelector('.search-bar').addEventListener('click', function(e){
+      ensureExplorePopulated();
+      openExplore('popular');
+      searchBar.classList.add('search-active');
+      searchBar.focus();
+    }, { passive:true });
+
+    // filter logic
+    function performSearch(q){
+      const term = (q||'').trim().toLowerCase();
+      ensureExplorePopulated();
+      let any = false;
+      // search across all grids
+      document.querySelectorAll('.explore-grid').forEach(grid=>{
+        grid.querySelectorAll('.explore-card').forEach(card=>{
+          const nameEl = card.querySelector('.explore-card-title') || card.querySelector('.card-title') || { textContent: '' };
+          const subtitleEl = card.querySelector('.explore-card-subtitle') || { textContent: '' };
+          const text = (nameEl.textContent + ' ' + subtitleEl.textContent).toLowerCase();
+          if(!term || text.includes(term)){
+            card.style.display = '';
+            any = true;
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+      // show no-results message
+      const body = document.querySelector('.explore-body');
+      if(!term){
+        const prev = document.querySelector('.explore-no-results');
+        prev && prev.remove();
+      } else {
+        let prev = document.querySelector('.explore-no-results');
+        if(!any){
+          if(!prev){
+            const el = document.createElement('div');
+            el.className = 'explore-no-results';
+            el.textContent = `No results for "${term}"`;
+            body.prepend(el);
+          } else {
+            prev.textContent = `No results for "${term}"`;
+          }
+        } else {
+          prev && prev.remove();
+        }
+      }
+    }
+
+    const debouncedSearch = debounce(performSearch, 250);
+    searchBar.addEventListener('input', e => {
+      debouncedSearch(e.target.value);
+    });
+
+    // clear highlight on blur
+    searchBar.addEventListener('blur', ()=> searchBar.classList.remove('search-active'));
+  }
+
+  // improve slider performance: pause on touch and when explore modal open
+  (function optimizeSlider(){
+    const track = document.getElementById('autoSliderTrack');
+    const dots = document.getElementById('autoSliderDots');
+    if(!track || !dots) return;
+    const slides = Array.from(track.children);
+    if(!slides.length) return;
+    let idx = 0;
+    let interval = Math.max(4500, navigator.userAgent.includes('Mobi') ? 6000 : 4500);
+    let timer = null;
+
+    function render(){
+      track.style.transform = `translateX(-${idx * 100}%)`;
+      dots.innerHTML = '';
+      slides.forEach((_, i) => {
+        const b = document.createElement('button');
+        b.className = 'auto-slider-dot' + (i===idx ? ' active' : '');
+        b.onclick = ()=> { idx = i; render(); resetTimer(); };
+        dots.appendChild(b);
+      });
+    }
+
+    function next(){ idx = (idx + 1) % slides.length; render(); }
+    function resetTimer(){ clearInterval(timer); timer = setInterval(next, interval); }
+    render(); resetTimer();
+
+    // pause on touch interaction to reduce CPU on mobile
+    let isTouching = false;
+    track.addEventListener('touchstart', ()=> { isTouching = true; clearInterval(timer); }, { passive:true });
+    track.addEventListener('touchend', ()=> { if(isTouching) { isTouching = false; resetTimer(); } }, { passive:true });
+
+    // pause if any modal/explore open
+    const pauseOnOpen = ()=> clearInterval(timer);
+    const resumeOnClose = ()=> resetTimer();
+    document.addEventListener('explore-open', pauseOnOpen);
+    document.addEventListener('explore-close', resumeOnClose);
+  })();
+
+  // make openExplore/populate robust: ensure grids populated and remove boxed look
+  const origOpenExplore = window.openExplore;
+  window.openExplore = function(cat){
+    ensureExplorePopulated();
+    const screen = document.getElementById('exploreScreen');
+    if(!screen) return;
+    screen.classList.add('active','explore-unboxed');
+    // highlight category card
+    document.querySelectorAll('.category-card').forEach(c=>{
+      const label = c.querySelector('.category-label')?.textContent?.trim().toLowerCase() || '';
+      c.classList.toggle('active', label === ((cat||'popular').toLowerCase()));
+    });
+    // show tab
+    if(typeof switchExploreTab === 'function') switchExploreTab(cat || 'popular');
+    if(typeof setNav === 'function') setNav('explore');
+    // emit event for slider pause
+    document.dispatchEvent(new Event('explore-open'));
+  };
+
+  // closeExplore should resume slider
+  const origCloseExplore = window.closeExplore;
+  window.closeExplore = function(){
+    const screen = document.getElementById('exploreScreen');
+    screen && screen.classList.remove('active','explore-unboxed');
+    if(typeof setNav === 'function') setNav('home');
+    document.dispatchEvent(new Event('explore-close'));
+  };
+
+  // premium More modal enhancements: add header & quick-actions when opened
+  const origOpenMore = window.openMore || function(){ document.getElementById('moreModal')?.classList.add('active'); };
+  window.openMore = function(){
+    origOpenMore();
+    const content = document.getElementById('moreContent');
+    if(!content) return;
+    // build premium header
+    const header = document.createElement('div');
+    header.className = 'more-header';
+    header.innerHTML = `<div class="more-hero"><div class="icon">🔎</div><div><strong style="font-size:1.05rem">More & Tools</strong><div style="color:var(--text-light);font-size:0.9rem">Quick access to useful travel helpers</div></div></div>
+                        <div style="display:flex;gap:.5rem;align-items:center"><button class="btn btn-outline btn-small" onclick="closeMore()">Close</button></div>`;
+    // inject at top
+    if(content.firstChild && content.firstChild.classList && content.firstChild.classList.contains('more-list')){
+      content.insertBefore(header, content.firstChild);
+    } else {
+      content.prepend(header);
+    }
+    // add a prominent quick actions row
+    const quick = document.createElement('div');
+    quick.className = 'more-actions';
+    quick.innerHTML = `<button class="btn btn-primary btn-small" onclick="weatherForecast()">Weather</button>
+                       <button class="btn btn-outline btn-small" onclick="showNearbyEssentials('atm')">Nearby</button>
+                       <button class="btn btn-outline btn-small" onclick="showTransportTimings()">Transport</button>
+                       <button class="btn btn-secondary btn-small" onclick="openGuides()">Guides</button>`;
+    header.after(quick);
+  };
+
+  // ensure explore is populated early but not expensive: run after first paint
+  if('requestIdleCallback' in window){
+    requestIdleCallback(()=> ensureExplorePopulated(), { timeout: 1000 });
+  } else {
+    setTimeout(()=> ensureExplorePopulated(), 700);
+  }
+
+  // small accessibility/perf tweak: reduce animations when user prefers reduced motion
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    document.documentElement.style.setProperty('--reduce-motion','1');
+    document.querySelectorAll('*').forEach(el => el.style.transitionDuration = '0.001ms');
+  }
+
+  // expose helpers in case code order differs
+  window.ensureExplorePopulated = ensureExplorePopulated;
 })();
 </script>
 </body>

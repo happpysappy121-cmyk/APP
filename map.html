@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevBhoomi - Uttarakhand Explorer (Massive Expansion)</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="http://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="http://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    
+    <link rel="stylesheet" href="http://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --primary: #f59e0b; /* Explorer theme color (Orange) */
+            --secondary: #0ea5e9; /* Light Blue */
+            --accent-green: #10b981; /* Essentials theme color (Green) */
+            --accent-purple: #8b5cf6;
+            --service-hospital: #ef4444; 
+            --service-fuel: #f97316;     
+            --service-atm: #0ea5e9;      
+            --app-explorer: #0f172a;
+            --app-essentials: var(--accent-green);
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --radius-lg: 24px;
+            --fab-suggest-color: var(--primary); 
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { font-family: 'Outfit', sans-serif; background: #eef2f6; color: var(--text-primary); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        .map-wrapper { position: relative; flex: 1; width: 100%; height: 100%; z-index: 1; }
+        #map { width: 100%; height: 100%; z-index: 1; }
+        .top-bar { position: absolute; top: 20px; left: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 15px; pointer-events: none; }
+        .app-switcher { display: flex; gap: 10px; pointer-events: auto; background: white; padding: 8px; border-radius: var(--radius-lg); box-shadow: 0 4px 20px rgba(0,0,0,0.08); max-width: 400px; margin: 0 auto; }
+        .app-btn { flex: 1; padding: 10px 15px; border-radius: 18px; border: none; font-weight: 600; font-size: 0.9rem; cursor: pointer; background: transparent; color: var(--text-secondary); transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .app-btn.active-explorer { background: var(--app-explorer); color: white; box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2); }
+        .app-btn.active-essentials { background: var(--app-essentials); color: white; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+
+        .search-row { display: flex; gap: 10px; pointer-events: auto; }
+        .search-box { flex: 1; display: flex; align-items: center; height: 50px; padding: 0 20px; border-radius: var(--radius-lg); background: white; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .search-input { border: none; outline: none; width: 100%; font-family: inherit; font-size: 1rem; margin-left: 10px; background: transparent; }
+        .search-icon-wrapper { color: #94a3b8; width: 20px; display: flex; justify-content: center; align-items: center; } 
+        .icon-btn { width: 50px; height: 50px; border-radius: 50%; border: none; background: white; color: var(--text-secondary); font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        
+        .filter-scroller { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; pointer-events: auto; }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .filter-scroller::-webkit-scrollbar { display: none; }
+
+        .chip { padding: 8px 16px; background: white; border-radius: 30px; border: none; font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); white-space: nowrap; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.05); transition: all 0.3s; display: flex; align-items: center; gap: 6px; }
+        .chip.active { background: var(--text-primary); color: white; transform: translateY(-2px); }
+        .chip[data-category="Hospital"].active { background: var(--service-hospital); }
+        .chip[data-category="FuelStation"].active { background: var(--service-fuel); }
+        .chip[data-category="ATM"].active { background: var(--service-atm); }
+        .chip[data-category="Helpline"].active { background: var(--secondary); }
+        
+        /* Marker Cluster Styles - Different colors for different modes */
+        .marker-cluster-explorer div { background-color: var(--primary); }
+        .marker-cluster-essentials div { background-color: var(--accent-green); }
+        
+        .marker-cluster-small div { width: 30px; height: 30px; margin-left: 5px; margin-top: 5px; }
+        .marker-cluster-medium div { width: 40px; height: 40px; margin-left: 5px; margin-top: 5px; }
+        .marker-cluster-large div { width: 50px; height: 50px; margin-left: 5px; margin-top: 5px; }
+        .marker-cluster div span { line-height: 40px; }
+        
+        /* Markers & Pulse */
+        .custom-pin { display: flex; align-items: center; justify-content: center; }
+        .pin-inner { width: 40px; height: 40px; border-radius: 50%; background: white; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; position: relative; }
+        
+        /* Pulse for User Location and Explorer POIs */
+        .pulse::after { 
+            content: ''; position: absolute; width: 100%; height: 100%; border-radius: 50%; 
+            animation: pulse-orange 2s infinite; 
+            box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); 
+        }
+        
+        /* Suggestion & External Search Pin Style */
+        .suggest-pin .pin-inner { border-color: var(--secondary) !important; box-shadow: 0 0 20px rgba(14, 165, 233, 0.5) !important; }
+        .suggest-pulse::after { 
+            content: ''; position: absolute; width: 100%; height: 100%; border-radius: 50%; 
+            box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.8); 
+            animation: pulse-blue 1.5s infinite; 
+        }
+        
+        /* External Search Result Pin (Unique, non-pulsing, purple pin) */
+        .external-search-pin .pin-inner { background: var(--accent-purple); color: white; border-color: white; font-size: 1.2rem; }
+
+        @keyframes pulse-orange {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+        @keyframes pulse-blue {
+            0% { transform: scale(0.6); opacity: 0.8; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        /* Popups */
+        .popup-img { width: 100%; height: 120px; object-fit: cover; border-radius: 15px 15px 0 0; }
+        .popup-img.service-icon { height: 60px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; }
+        .popup-info { padding: 15px; background: var(--bg-primary); border-radius: 0 0 15px 15px; }
+        .popup-title { margin: 0; font-size: 1.1rem; color: var(--text-primary); font-weight: 700; }
+        .popup-meta-distance { font-size: 0.85rem; font-weight: 600; color: var(--secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        
+        /* FAB Menu */
+        .fab-menu { position: absolute; bottom: 30px; right: 20px; display: flex; flex-direction: column; gap: 12px; z-index: 999; pointer-events: auto; }
+        .fab { width: 56px; height: 56px; border-radius: 20px; color: white; border: none; box-shadow: 0 8px 25px rgba(15, 23, 42, 0.3); font-size: 1.2rem; cursor: pointer; transition: all 0.2s; }
+        .fab-suggest { background: var(--fab-suggest-color); animation: pulse-fab 2s infinite; }
+        .fab-sos { background: var(--service-hospital); }
+
+        @keyframes pulse-fab {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); } 
+            50% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
+        /* Route Panel (Bottom Sheet) */
+        .bottom-sheet { position: absolute; bottom: 20px; left: 20px; right: 20px; z-index: 1000; pointer-events: none; }
+        .routes-container { pointer-events: auto; background: white; padding: 20px; border-radius: var(--radius-lg); box-shadow: 0 -5px 30px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; display: none; }
+        .routes-container.active { display: block; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .routes-container button { text-align: left; }
+        .routes-container button.active { border: 3px solid var(--accent-purple); box-shadow: 0 0 10px rgba(139, 92, 246, 0.5); }
+        
+        .route-btn-curated {
+            justify-content: flex-start; 
+            padding: 15px; 
+            border-radius: 12px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .route-btn-curated:hover {
+            transform: translateY(-1px);
+        }
+        .route-btn-curated .tag {
+            color: white; 
+            padding: 6px 10px; 
+            border-radius: 8px; 
+            font-size: 0.75rem; 
+            font-weight: 700; 
+            opacity: 0.9;
+            margin-right: 10px;
+            display: inline-block;
+        }
+        
+        /* NEW: Leaflet Routing Machine Styling */
+        .leaflet-routing-container.leaflet-control {
+            margin-top: 100px; /* Push it down from the top bar */
+            margin-left: 20px;
+            pointer-events: auto;
+            /* Ensure the control is visible above the map but below the top bar */
+            z-index: 900; 
+        }
+        .leaflet-routing-container {
+            padding: 10px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            max-height: 70vh; /* Limit height */
+            overflow-y: auto;
+        }
+        .leaflet-routing-container button {
+            background: var(--primary);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .leaflet-routing-container button:hover {
+            background: #e68a00;
+        }
+
+
+        @media (max-width: 768px) {
+            .top-bar { left: 15px; right: 15px; top: 15px; }
+            .fab-menu { bottom: 25px; right: 15px; }
+            /* Adjust routing panel for smaller screens */
+            .leaflet-routing-container.leaflet-control {
+                margin-top: 10px;
+                margin-left: 10px;
+                right: 10px;
+                width: calc(100% - 20px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="map-wrapper">
+        <nav class="top-bar">
+            <div class="app-switcher">
+                <button class="app-btn active-explorer" data-app="explorer" onclick="switchApp('explorer', this)">
+                    <i class="fas fa-mountain"></i> Explorer
+                </button>
+                <button class="app-btn" data-app="essentials" onclick="switchApp('essentials', this)">
+                    <i class="fas fa-hand-holding-medical"></i> Essentials
+                </button>
+            </div>
+            <div class="search-row">
+                <button class="icon-btn" id="routesBtn" onclick="toggleRoutes()" title="Routes"><i class="fas fa-route"></i></button>
+                <div class="search-box" id="searchBox">
+                    <span class="search-icon-wrapper" id="searchIcon"><i class="fas fa-search"></i></span>
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search Uttarakhand (Press Enter for Global Search)..." oninput="handleSearch(this.value)">
+                </div>
+                <button class="icon-btn" onclick="resetMap()" title="Reset"><i class="fas fa-arrows-alt"></i></button>
+            </div>
+
+            <div class="filter-scroller" id="filterChips"></div>
+        </nav>
+
+        <div id="map"></div>
+
+        <div class="fab-menu">
+            <button class="fab fab-suggest" id="suggestFab" onclick="getUserLocationAndSuggest()" title="Find Nearby (Explorer/Essentials)">
+                <i class="fas fa-location-crosshairs"></i>
+            </button>
+            <button class="fab fab-sos" onclick="emergencySOS()" title="Emergency SOS">
+                <i class="fas fa-exclamation-triangle"></i>
+            </button>
+        </div>
+
+        <aside class="bottom-sheet">
+            <div class="routes-container" id="routesPanel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="font-size: 1.2rem; margin: 0;">🏔️ Curated Journeys</h3>
+                    <button onclick="toggleRoutes()" style="border: none; background: none; font-size: 1.4rem; cursor: pointer; color: #64748b;">×</button>
+                </div>
+                <div style="display: grid; gap: 12px;">
+                    <button class="route-btn-curated" onclick="drawRoute('charDham')" style="background: var(--primary);">
+                        <span class="tag" style="background: var(--primary);">#1 PILGRIMAGE</span>
+                        Char Dham Yatra (15 Days)
+                    </button>
+                    <button class="route-btn-curated" onclick="drawRoute('panchKedar')" style="background: var(--accent-green);">
+                        <span class="tag" style="background: var(--accent-green);">TREK</span>
+                        Panch Kedar Circuit
+                    </button>
+                    <button class="route-btn-curated" onclick="drawRoute('kumaon')" style="background: var(--accent-purple);">
+                        <span class="tag" style="background: var(--accent-purple);">LAKES</span>
+                        Kumaon Lake Circuit
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script src="http://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="http://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script src="http://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    
+    <script>
+        // --- 1. EXPANDED DATASETS (35+ ITEMS EACH) ---
+        
+        const touristDestinations = [
+            // SPIRITUAL (14)
+            { id: 1, name: "Kedarnath", lat: 30.7352, lng: 79.0669, type: "Spiritual", alt: "3,583m", img: "https://images.unsplash.com/photo-1626084677768-a472c9a92437?w=400", desc: "One of 12 Jyotirlingas" },
+            { id: 2, name: "Badrinath", lat: 30.7447, lng: 79.4930, type: "Spiritual", alt: "3,100m", img: "https://images.unsplash.com/photo-1616864408758-297d2e0b5757?w=400", desc: "Abode of Lord Vishnu" },
+            { id: 3, name: "Gangotri", lat: 30.9990, lng: 78.7680, type: "Spiritual", alt: "3,104m", img: "https://images.unsplash.com/photo-1558583082-46d3354b727d?w=400", desc: "Source of River Ganga" },
+            { id: 4, name: "Yamunotri", lat: 31.0108, lng: 78.4279, type: "Spiritual", alt: "3,293m", img: "https://images.unsplash.com/photo-1629934904049-7c992f5d281b?w=400", desc: "Source of River Yamuna" },
+            { id: 5, name: "Rishikesh", lat: 30.0869, lng: 78.2676, type: "Spiritual", alt: "372m", img: "https://images.unsplash.com/photo-1596020584282-359f42b36b33?w=400", desc: "Yoga Capital" },
+            { id: 6, name: "Haridwar", lat: 29.9457, lng: 78.1644, type: "Spiritual", alt: "249m", img: "https://images.unsplash.com/photo-1613899208841-1f3bfa7079d4?w=400", desc: "Gateway to Gods" },
+            { id: 7, name: "Tungnath", lat: 30.4884, lng: 79.2158, type: "Spiritual", alt: "3,680m", img: "https://images.unsplash.com/photo-1628608880626-d3f3f56860f7?w=400", desc: "Highest Shiva Temple (Panch Kedar)" },
+            { id: 8, name: "Jageshwar Dham", lat: 29.6430, lng: 79.9800, type: "Spiritual", alt: "1,870m", img: "https://images.unsplash.com/photo-1579705912953-29474775e533?w=400", desc: "Group of 124 Ancient Temples" },
+            { id: 9, name: "Madmaheshwar", lat: 30.6400, lng: 79.2000, type: "Spiritual", alt: "3,497m", img: "https://images.unsplash.com/photo-1628608880626-d3f3f56860f7?w=400", desc: "Second Kedar of Panch Kedar" },
+            { id: 10, name: "Kalpeshwar", lat: 30.4350, lng: 79.4300, type: "Spiritual", alt: "2,200m", img: "https://images.unsplash.com/photo-1628608880626-d3f3f56860f7?w=400", desc: "Only Panch Kedar accessible year-round" },
+            { id: 11, name: "Rudranath", lat: 30.5000, lng: 79.3100, type: "Spiritual", alt: "3,600m", img: "https://images.unsplash.com/photo-1628608880626-d3f3f56860f7?w=400", desc: "Fourth Kedar, difficult trek" },
+            { id: 12, name: "Kapil Muni Ashram", lat: 29.9320, lng: 78.1640, type: "Spiritual", alt: "249m", img: "https://images.unsplash.com/photo-1613899208841-1f3bfa7079d4?w=400", desc: "Ancient Ashram in Haridwar" },
+            { id: 13, name: "Triyuginarayan", lat: 30.6860, lng: 79.0560, type: "Spiritual", alt: "1,980m", img: "https://images.unsplash.com/photo-1626084677768-a472c9a92437?w=400", desc: "Lord Shiva & Parvati wedding spot" },
+            { id: 14, name: "Vashistha Cave", lat: 30.1700, lng: 78.3700, type: "Spiritual", alt: "500m", img: "https://images.unsplash.com/photo-1596020584282-359f42b36b33?w=400", desc: "Meditation site near Rishikesh" },
+
+            // ADVENTURE (10)
+            { id: 20, name: "Auli", lat: 30.5284, lng: 79.5630, type: "Adventure", alt: "2,800m", img: "https://images.unsplash.com/photo-1612438214708-f428a7075fd6?w=400", desc: "Ski destination & Ropeway" },
+            { id: 21, name: "Chopta", lat: 30.4770, lng: 79.1980, type: "Adventure", alt: "2,680m", img: "https://images.unsplash.com/photo-1628608880626-d3f3f56860f7?w=400", desc: "Mini Switzerland & Trekking hub" },
+            { id: 22, name: "Dayara Bugyal", lat: 30.7300, lng: 78.5300, type: "Adventure", alt: "3,408m", img: "https://images.unsplash.com/photo-1628608880626-d3f3f56860f7?w=400", desc: "Popular High Altitude Trek" },
+            { id: 23, name: "Pindari Glacier", lat: 30.2970, lng: 79.9400, type: "Adventure", alt: "3,627m", img: "https://images.unsplash.com/photo-1628608880626-d3f3f56860f7?w=400", desc: "Source of Pindar River, 9-day trek" }, 
+            { id: 24, name: "Bedni Bugyal", lat: 30.1200, lng: 79.7400, type: "Adventure", alt: "3,354m", img: "https://images.unsplash.com/photo-1628608880626-d3f3f56860f7?w=400", desc: "Trek, famous for Himalayan meadows" }, 
+            { id: 25, name: "Roopkund Lake", lat: 30.2700, lng: 79.7400, type: "Adventure", alt: "5,029m", img: "https://images.unsplash.com/photo-1628608880626-d3f3f56860f7?w=400", desc: "Skeleton Lake, famous but challenging trek" },
+            { id: 26, name: "Har Ki Dun", lat: 31.0700, lng: 78.2900, type: "Adventure", alt: "3,566m", img: "https://images.unsplash.com/photo-1628608880626-d3f3f56860f7?w=400", desc: "Valley of Gods, moderate trek" },
+            { id: 27, name: "Dodital Lake", lat: 30.8200, lng: 78.4300, type: "Adventure", alt: "3,307m", img: "https://images.unsplash.com/photo-1628608880626-d3f3f56860f7?w=400", desc: "Freshwater lake, source of Assi Ganga" },
+            { id: 28, name: "Kuflon Trek", lat: 30.7300, lng: 78.4500, type: "Adventure", alt: "1,550m", img: "https://images.unsplash.com/photo-1628608880626-d3f3f56860f7?w=400", desc: "Short trek near Uttarkashi" },
+            { id: 29, name: "White Water Rafting", lat: 30.0700, lng: 78.3200, type: "Adventure", alt: "372m", img: "https://images.unsplash.com/photo-1596020584282-359f42b36b33?w=400", desc: "Kaudiyala to Rishikesh stretch" },
+
+            // NATURE (10)
+            { id: 30, name: "Valley of Flowers", lat: 30.7280, lng: 79.6053, type: "Nature", alt: "3,658m", img: "https://images.unsplash.com/photo-1596896265744-8d1976a43881?w=400", desc: "UNESCO Site, famous for endemic flowers" },
+            { id: 32, name: "Mussoorie", lat: 30.4599, lng: 78.0664, type: "Nature", alt: "2,005m", img: "https://images.unsplash.com/photo-1626621341476-3b375b426764?w=400", desc: "Queen of Hills" },
+            { id: 33, name: "Kausani", lat: 29.8510, lng: 79.5970, type: "Nature", alt: "1,890m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "300km Panoramic Himalayan View" },
+            { id: 34, name: "Nainital", lat: 29.3800, lng: 79.4600, type: "Nature", alt: "2,084m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Lake City, Naini Lake" }, 
+            { id: 35, name: "Landour", lat: 30.4140, lng: 78.0860, type: "Nature", alt: "2,278m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Quiet Hill Station near Mussoorie" },
+            { id: 36, name: "Khirsu", lat: 30.1300, lng: 78.8500, type: "Nature", alt: "1,700m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Offbeat destination with snow views" },
+            { id: 37, name: "Munsiyari", lat: 30.0600, lng: 80.2500, type: "Nature", alt: "2,200m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Little Kashmir, views of Panchachuli peaks" },
+            { id: 38, name: "Sattal", lat: 29.3600, lng: 79.5400, type: "Nature", alt: "1,370m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Group of seven interconnected freshwater lakes" },
+            { id: 39, name: "Chakrata", lat: 30.7000, lng: 78.2500, type: "Nature", alt: "2,118m", img: "https://images.unsplash.com/photo-1626621341476-3b375b426764?w=400", desc: "Secluded military cantonment hill station" },
+            { id: 45, name: "Vasundhara Falls", lat: 30.7700, lng: 79.4900, type: "Nature", alt: "4,000m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Waterfalls near Mana Village" }, 
+
+            // WILDLIFE (10)
+            { id: 40, name: "Jim Corbett", lat: 29.5300, lng: 78.7747, type: "Wildlife", alt: "400m", img: "https://images.unsplash.com/photo-1589403487372-97b77464d642?w=400", desc: "Oldest National Park, Bengal Tigers" },
+            { id: 41, name: "Rajaji", lat: 30.0667, lng: 78.1833, type: "Wildlife", alt: "500m", img: "https://images.unsplash.com/photo-1558583082-46d3354b727d?w=400", desc: "Tiger Reserve, Elephant population" },
+            { id: 42, name: "Asan Barrage", lat: 30.4570, lng: 77.7050, type: "Wildlife", alt: "400m", img: "https://images.unsplash.com/photo-1589403487372-97b77464d642?w=400", desc: "Migratory Bird Sanctuary" },
+            { id: 43, name: "Govind Pashu Vihar", lat: 31.0500, lng: 78.3600, type: "Wildlife", alt: "1,300m", img: "https://images.unsplash.com/photo-1589403487372-97b77464d642?w=400", desc: "Snow Leopard habitat" }, 
+            { id: 44, name: "Binsar Sanctuary", lat: 29.7200, lng: 79.7400, type: "Wildlife", alt: "2,412m", img: "https://images.unsplash.com/photo-1589403487372-97b77464d642?w=400", desc: "Leopard, Deer, and bird watching" },
+            { id: 46, name: "Nanda Devi National Park", lat: 30.7000, lng: 79.8000, type: "Wildlife", alt: "5,000m", img: "https://images.unsplash.com/photo-1589403487372-97b77464d642?w=400", desc: "High-altitude UNESCO World Heritage Site" },
+            { id: 47, name: "Kedarnath Wildlife Sanctuary", lat: 30.5000, lng: 79.2000, type: "Wildlife", alt: "1,160m-5,200m", img: "https://images.unsplash.com/photo-1589403487372-97b77464d642?w=400", desc: "Known for Himalayan Musk Deer" },
+            { id: 48, name: "Askot Wildlife Sanctuary", lat: 29.8000, lng: 80.3500, type: "Wildlife", alt: "600m-6,900m", img: "https://images.unsplash.com/photo-1589403487372-97b77464d642?w=400", desc: "Easternmost sanctuary in Uttarakhand" },
+            { id: 49, name: "Binsar Zero Point", lat: 29.7080, lng: 79.7250, type: "Wildlife", alt: "2,412m", img: "https://images.unsplash.com/photo-1589403487372-97b77464d642?w=400", desc: "Viewing point for major Himalayan peaks" },
+            { id: 55, name: "Jhilmil Jheel", lat: 29.6200, lng: 78.3300, type: "Wildlife", alt: "300m", img: "https://images.unsplash.com/photo-1589403487372-97b77464d642?w=400", desc: "Conservation Reserve near Haridwar" }, 
+
+            // HISTORICAL/CULTURAL (10)
+            { id: 50, name: "Patal Bhuvaneshwar", lat: 29.7460, lng: 80.0930, type: "Cultural", alt: "1,350m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Limestone Cave Temple complex" }, 
+            { id: 51, name: "Adi Kailash", lat: 30.2900, lng: 80.8900, type: "Cultural", alt: "4,770m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Mini Kailash, Sacred Pilgrimage" }, 
+            { id: 52, name: "Hemkund Sahib", lat: 30.7000, lng: 79.6200, type: "Cultural", alt: "4,360m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Sikh Pilgrimage, high altitude lake" }, 
+            { id: 53, name: "Kempty Falls", lat: 30.4700, lng: 78.0200, type: "Cultural", alt: "1,364m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Major tourist waterfall near Mussoorie" }, 
+            { id: 54, name: "Tehri Dam", lat: 30.3800, lng: 78.4800, type: "Cultural", alt: "830m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Highest dam in India, reservoir activities" },
+            { id: 56, name: "Mana Village", lat: 30.7700, lng: 79.4900, type: "Cultural", alt: "3,200m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Last Indian village before the China border" },
+            { id: 57, name: "Devprayag", lat: 30.1500, lng: 78.6000, type: "Cultural", alt: "830m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Confluence of Alaknanda and Bhagirathi to form the Ganga" },
+            { id: 58, name: "Lohaghat", lat: 29.3400, lng: 80.0900, type: "Cultural", alt: "1,706m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Historical town known for Mayawati Ashram" },
+            { id: 59, name: "Dandeshwar Temple", lat: 29.6200, lng: 79.5200, type: "Cultural", alt: "1,500m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Ancient group of temples near Almora" },
+            { id: 60, name: "Chitai Golu Devta Temple", lat: 29.6300, lng: 79.7400, type: "Cultural", alt: "1,800m", img: "https://images.unsplash.com/photo-1588667822944-93e1173d1f39?w=400", desc: "Temple known for letters of request from devotees" }
+        ];
+
+        const serviceLocations = [
+            // HOSPITALS (11)
+            { id: 101, name: "Doon Hospital", lat: 30.320, lng: 78.050, type: "Hospital", phone: "0135-2659350", info: "Major Govt. Hospital, all facilities.", addr: "Patel Nagar, Dehradun" },
+            { id: 102, name: "AIIMS Rishikesh", lat: 30.070, lng: 78.300, type: "Hospital", phone: "0135-2462940", info: "Apex medical institution.", addr: "Veerbhadra Road, Rishikesh" },
+            { id: 103, name: "Haldwani Base Hospital", lat: 29.230, lng: 79.510, type: "Hospital", phone: "05946-235800", info: "Key Hospital in Kumaon.", addr: "Haldwani" },
+            { id: 104, name: "District Hospital Uttarkashi", lat: 30.720, lng: 78.450, type: "Hospital", phone: "01374-222131", info: "Vital for Gangotri/Yamunotri routes.", addr: "Uttarkashi" },
+            { id: 105, name: "Synergy Hospital", lat: 30.300, lng: 78.050, type: "Hospital", phone: "0135-2608080", info: "Advanced Cardiac Care.", addr: "Ballupur Road, Dehradun" },
+            { id: 106, name: "CHC Joshimath", lat: 30.553, lng: 79.560, type: "Hospital", phone: "01389-222123", info: "Community Health Center (High Altitude).", addr: "Joshimath" },
+            { id: 107, name: "Srinagar Base Hospital", lat: 30.224, lng: 78.800, type: "Hospital", phone: "01346-252115", info: "Key Hospital on Char Dham Route.", addr: "Srinagar (Garhwal)" },
+            { id: 108, name: "Bageshwar District Hospital", lat: 29.837, lng: 79.771, type: "Hospital", phone: "05963-220101", info: "Primary aid for Pindari area.", addr: "Bageshwar" },
+            { id: 109, name: "District Hospital Almora", lat: 29.596, lng: 79.660, type: "Hospital", phone: "05962-230101", info: "Key District Hospital in Kumaon.", addr: "Almora" },
+            { id: 110, name: "Government Hospital Gopeshwar", lat: 30.410, lng: 79.320, type: "Hospital", phone: "01372-252123", info: "Closest aid for Tungnath region.", addr: "Gopeshwar" },
+            { id: 111, name: "Bhowali Chest Hospital", lat: 29.410, lng: 79.510, type: "Hospital", phone: "05942-220025", info: "Specialized TB and chest care near Nainital.", addr: "Bhowali" },
+
+            // FUEL STATIONS (11)
+            { id: 201, name: "HP Haridwar Bypass", lat: 29.980, lng: 78.090, type: "FuelStation", phone: "24x7", info: "Large pump, all amenities.", addr: "Laksar Road" },
+            { id: 202, name: "BPCL Dehradun Rajpur", lat: 30.370, lng: 78.080, type: "FuelStation", phone: "24x7", info: "Last major pump before Mussoorie climb.", addr: "Rajpur Road" },
+            { id: 203, name: "IOCL Rudrapur", lat: 28.980, lng: 79.400, type: "FuelStation", phone: "24x7", info: "On NH 9, key industrial area.", addr: "Rudrapur" },
+            { id: 204, name: "HP Kedarnath Bypass", lat: 30.270, lng: 78.960, type: "FuelStation", phone: "Daytime", info: "Closest pump to Guptkashi/Kedarnath road.", addr: "Agastyamuni" },
+            { id: 205, name: "BPCL Ramgarh", lat: 29.470, lng: 79.580, type: "FuelStation", phone: "Daytime", info: "For areas near Mukteshwar.", addr: "Ramgarh" },
+            { id: 206, name: "IOCL Tehri", lat: 30.400, lng: 78.470, type: "FuelStation", phone: "Daytime", info: "Near Tehri Dam.", addr: "Tehri Road" },
+            { id: 207, name: "Petrol Pump Kotdwar", lat: 29.750, lng: 78.520, type: "FuelStation", phone: "24x7", info: "Major entry point for Garhwal hills.", addr: "Kotdwar" },
+            { id: 208, name: "BPCL Ramnagar", lat: 29.390, lng: 79.130, type: "FuelStation", phone: "24x7", info: "Near Jim Corbett National Park gate.", addr: "Ramnagar" },
+            { id: 209, name: "IOCL Dharchula", lat: 29.850, lng: 80.530, type: "FuelStation", phone: "Daytime", info: "Remote pump near Indo-Nepal border.", addr: "Dharchula" },
+            { id: 210, name: "Ganga Valley Fuel", lat: 30.980, lng: 78.450, type: "FuelStation", phone: "Daytime", info: "Near Gangotri highway.", addr: "Harsil" },
+            { id: 211, name: "HP Pauri", lat: 30.140, lng: 78.780, type: "FuelStation", phone: "Daytime", info: "Town centre pump.", addr: "Pauri" },
+
+            // ATMs (11)
+            { id: 301, name: "SBI ATM Dehradun", lat: 30.300, lng: 78.040, type: "ATM", bank: "SBI", phone: "1800-1100", info: "High limit withdrawals.", addr: "Paltan Bazaar" },
+            { id: 302, name: "HDFC ATM Haridwar", lat: 29.946, lng: 78.165, type: "ATM", bank: "HDFC", phone: "1800-2664332", info: "24x7 operational.", addr: "Har Ki Pauri" },
+            { id: 303, name: "PNB ATM Badrinath", lat: 30.744, lng: 79.493, type: "ATM", bank: "PNB", phone: "1800-1802222", info: "High-altitude ATM, seasonal operation.", addr: "Near Temple" },
+            { id: 304, name: "ICICI ATM Nainital", lat: 29.390, lng: 79.450, type: "ATM", bank: "ICICI", phone: "1860-266266", info: "Near Mall Road.", addr: "Mallital" },
+            { id: 305, name: "AXIS ATM Mussoorie", lat: 30.459, lng: 78.066, type: "ATM", bank: "Axis", phone: "1860-4195555", info: "On Library Chowk.", addr: "Mussoorie" },
+            { id: 306, name: "Yes Bank ATM Rudraprayag", lat: 30.290, lng: 78.980, type: "ATM", bank: "Yes", phone: "1800-1200", info: "Confluence point, essential.", addr: "Rudraprayag" },
+            { id: 307, name: "HDFC ATM Pithoragarh", lat: 29.580, lng: 80.220, type: "ATM", bank: "HDFC", phone: "24x7", info: "Main town ATM in remote area.", addr: "Pithoragarh" },
+            { id: 308, name: "UCO Bank ATM Guptkashi", lat: 30.500, lng: 79.160, type: "ATM", bank: "UCO", phone: "Daytime", info: "Closest ATM to Kedarnath trek base.", addr: "Guptkashi" },
+            { id: 309, name: "PNB ATM Joshimath", lat: 30.550, lng: 79.560, type: "ATM", bank: "PNB", phone: "24x7", info: "Usually operational.", addr: "Joshimath" },
+            { id: 310, name: "SBI ATM Mukteshwar", lat: 29.460, lng: 79.650, type: "ATM", bank: "SBI", phone: "24x7", info: "Only ATM in the Mukteshwar area.", addr: "Mukteshwar" },
+            { id: 311, name: "Canara Bank ATM Lohaghat", lat: 29.340, lng: 80.090, type: "ATM", bank: "Canara", phone: "24x7", info: "Closest ATM to Mayawati Ashram.", addr: "Lohaghat" },
+
+            // HELPLINES (11)
+            // Note: Lat/Lng for helplines are placeholders to ensure they can be filtered/plotted if needed, but they represent a statewide service.
+            { id: 401, name: "Uttarakhand Police", lat: 30.0667, lng: 78.1833, type: "Helpline", phone: "100", info: "State Police Emergency Service.", addr: "All Uttarakhand" },
+            { id: 402, name: "Ambulance/Fire", lat: 30.0667, lng: 78.1833, type: "Helpline", phone: "108", info: "Emergency Medical/Fire Service.", addr: "All Uttarakhand" },
+            { id: 403, name: "Disaster Helpline", lat: 30.0667, lng: 78.1833, type: "Helpline", phone: "1070", info: "State Disaster Management Cell.", addr: "All Uttarakhand" },
+            { id: 404, name: "Tourist Helpline", lat: 30.0667, lng: 78.1833, type: "Helpline", phone: "1364", info: "24x7 Tourist Assistance.", addr: "All Uttarakhand" },
+            { id: 405, name: "Road Accident Helpline", lat: 30.0667, lng: 78.1833, type: "Helpline", phone: "1033", info: "National Highway Emergency Service.", addr: "Major Highways" },
+            { id: 406, name: "Women Helpline", lat: 30.0667, lng: 78.1833, type: "Helpline", phone: "1090", info: "Women's Safety and Security.", addr: "All Uttarakhand" },
+            { id: 407, name: "Child Helpline", lat: 30.0667, lng: 78.1833, type: "Helpline", phone: "1098", info: "National Child Help Service.", addr: "All Uttarakhand" },
+            { id: 408, name: "Air Ambulance", lat: 30.0667, lng: 78.1833, type: "Helpline", phone: "1070", info: "Contact Disaster Cell for Air Rescue.", addr: "High Altitude" }, // Placeholder for high altitude rescue coordination
+            { id: 409, name: "Weather Updates", lat: 30.0667, lng: 78.1833, type: "Helpline", phone: "1077", info: "Local Weather and Road Condition updates.", addr: "All Uttarakhand" },
+            { id: 410, name: "Forest Dept. Emergency", lat: 30.0667, lng: 78.1833, type: "Helpline", phone: "1800-180-4141", info: "Wildlife and Forest Fire Emergency.", addr: "All Uttarakhand" },
+            { id: 411, name: "Cyber Crime", lat: 30.0667, lng: 78.1833, type: "Helpline", phone: "1930", info: "Cyber Crime Reporting.", addr: "All Uttarakhand" }
+        ];
+
+        // --- 2. MAP INITIALIZATION & LAYERS ---
+
+        let currentApp = 'explorer'; // 'explorer' or 'essentials'
+        let currentFilter = 'All'; // Current active filter category
+        let allExplorerMarkers = []; // Stores all original explorer markers
+        let allEssentialMarkers = []; // Stores all original essential markers
+        
+        // --- 3. GLOBAL VARIABLES ---
+        let userMarker = null;
+        let routingControl = null; // NEW: Global variable to hold the L.Routing.Control instance
+        let suggestMarker = null;
+        let externalSearchMarker = null; // Single marker for external search result
+
+        const map = L.map('map', {
+            zoomControl: false, 
+            maxBounds: [[28, 77], [32, 81]], 
+            maxBoundsViscosity: 1.0,
+        }).setView([30.0667, 79.0193], 8); 
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors | DevBhoomi Explorer',
+        }).addTo(map);
+
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        // Marker Cluster Group setup (unchanged)
+        const destinationMarkers = L.markerClusterGroup({
+            iconCreateFunction: function(cluster) {
+                const count = cluster.getChildCount();
+                let size = 'Small';
+                if (count > 20) size = 'Large';
+                else if (count > 10) size = 'Medium';
+                return L.divIcon({ 
+                    html: `<div><span>${count}</span></div>`, 
+                    className: `marker-cluster marker-cluster-${size} marker-cluster-explorer`, 
+                    iconSize: new L.Point(40, 40) 
+                });
+            }
+        });
+
+        const serviceMarkers = L.markerClusterGroup({
+            iconCreateFunction: function(cluster) {
+                const count = cluster.getChildCount();
+                let size = 'Small';
+                if (count > 20) size = 'Large';
+                else if (count > 10) size = 'Medium';
+                return L.divIcon({ 
+                    html: `<div><span>${count}</span></div>`, 
+                    className: `marker-cluster marker-cluster-${size} marker-cluster-essentials`, 
+                    iconSize: new L.Point(40, 40) 
+                });
+            }
+        });
+
+        let currentActiveLayer = destinationMarkers; 
+        
+        // --- 4. CUSTOM ICONS & POPUP TEMPLATES (No functional change) ---
+        const explorerIcons = {
+            "Spiritual": "fas fa-om", "Adventure": "fas fa-hiking",
+            "Nature": "fas fa-tree", "Wildlife": "fas fa-paw",
+            "Cultural": "fas fa-landmark"
+        };
+        const essentialIcons = {
+            "Hospital": { icon: "fas fa-hospital-alt", color: "var(--service-hospital)" },
+            "FuelStation": { icon: "fas fa-gas-pump", color: "var(--service-fuel)" },
+            "ATM": { icon: "fas fa-money-check-alt", color: "var(--service-atm)" },
+            "Helpline": { icon: "fas fa-phone-alt", color: "var(--secondary)" }
+        };
+
+        function createDestinationPopup(item) {
+            const iconClass = explorerIcons[item.type];
+            return `
+                <div style="max-width: 250px; font-family: 'Outfit', sans-serif;">
+                    <img src="${item.img}" alt="${item.name}" class="popup-img">
+                    <div class="popup-info">
+                        <h4 class="popup-title">${item.name}</h4>
+                        <p class="popup-meta-distance">
+                            <i class="${iconClass}"></i> ${item.type} | ${item.alt}
+                        </p>
+                        <p style="font-size: 0.9rem; margin-bottom: 15px; color: var(--text-secondary);">${item.desc}</p>
+                        <button onclick="requestRouteTo(${item.lat}, ${item.lng}, '${item.name}')" class="btn-nav" style="width: 100%; padding: 10px; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; background: var(--primary); color: white; ">
+                            <i class="fas fa-directions"></i> Get Directions
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createServicePopup(item) {
+            const service = essentialIcons[item.type];
+            const headerStyle = `background: ${service.color};`;
+            const mainInfo = item.type === 'ATM' ? item.bank : (item.type === 'Helpline' ? item.phone : item.phone);
+
+            return `
+                <div style="max-width: 250px; font-family: 'Outfit', sans-serif;">
+                    <div class="popup-img service-icon" style="${headerStyle} border-radius: 15px 15px 0 0;">
+                        <i class="${service.icon}"></i> 
+                    </div>
+                    <div class="popup-info">
+                        <h4 class="popup-title">${item.name}</h4>
+                        <p class="popup-meta-distance" style="color: ${service.color};">
+                            <i class="fas fa-map-marker-alt"></i> ${item.addr} 
+                        </p>
+                        <p style="font-size: 0.9rem; margin-bottom: 10px; color: var(--text-primary); font-weight: 500;">${mainInfo}</p>
+                        <p style="font-size: 0.85rem; margin-bottom: 15px; color: var(--text-secondary);">${item.info}</p>
+                        <div style="display: flex; gap: 10px;">
+                            ${item.type !== 'Helpline' ? `<button onclick="requestRouteTo(${item.lat}, ${item.lng}, '${item.name}')" style="flex: 1; padding: 10px; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; background: var(--secondary); color: white;"> <i class="fas fa-directions"></i> Nav </button>` : ''}
+                            <a href="tel:${item.phone.replace(/[^0-9+]/g, '')}" style="background: var(--accent-green); color: white; padding: 10px 15px; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s;">
+                                <i class="fas fa-phone-alt"></i> ${item.type === 'Helpline' ? 'Call' : 'Ph'}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function createExternalPopup(item) {
+            return `
+                <div style="max-width: 250px; font-family: 'Outfit', sans-serif; padding: 10px;">
+                    <h4 class="popup-title" style="margin-bottom: 5px;">📍 ${item.display_name.split(',')[0]}</h4>
+                    <p style="font-size: 0.85rem; margin-bottom: 15px; color: var(--text-secondary);">${item.display_name}</p>
+                    <button onclick="requestRouteTo(${item.lat}, ${item.lon}, '${item.display_name.split(',')[0]}')" class="btn-nav" style="width: 100%; padding: 10px; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; background: var(--accent-purple); color: white;">
+                        <i class="fas fa-directions"></i> Get Directions
+                    </button>
+                </div>
+            `;
+        }
+
+        function createCustomIcon(item, isSuggestion = false, isExternal = false) {
+            let iconKey, colorKey, pulseClass = '', customClass = 'custom-pin';
+
+            if (isExternal) {
+                iconKey = "fas fa-map-pin";
+                colorKey = "var(--accent-purple)";
+                customClass = 'custom-pin external-search-pin';
+            } else {
+                const isExplorer = !!explorerIcons[item.type];
+                iconKey = isExplorer ? explorerIcons[item.type] : essentialIcons[item.type].icon;
+                colorKey = isExplorer ? 'var(--primary)' : essentialIcons[item.type].color;
+                pulseClass = isSuggestion ? 'suggest-pulse' : ''; 
+                customClass = isSuggestion ? 'custom-pin suggest-pin' : 'custom-pin';
+            }
+
+            return L.divIcon({
+                className: customClass,
+                html: `<div class="pin-inner ${pulseClass}" style="color: ${isExternal ? 'white' : colorKey}; border-color: ${isExternal ? 'var(--accent-purple)' : colorKey}; background: ${isExternal ? 'var(--accent-purple)' : 'white'};"><i class="${iconKey}"></i></div>`,
+                iconSize: [40, 40],
+                iconAnchor: [20, 40],
+                popupAnchor: [0, -30]
+            });
+        }
+
+        // --- 5. DATA PLOTTING & INITIALIZATION ---
+
+        function plotAllMarkers() {
+            // Pre-plot all markers and store references
+            touristDestinations.forEach(item => {
+                const marker = L.marker([item.lat, item.lng], {
+                    icon: createCustomIcon(item),
+                    title: item.name
+                }).bindPopup(createDestinationPopup(item));
+                allExplorerMarkers.push(marker);
+            });
+
+            serviceLocations.forEach(item => {
+                const marker = L.marker([item.lat, item.lng], {
+                    icon: createCustomIcon(item),
+                    title: item.name
+                }).bindPopup(createServicePopup(item));
+                allEssentialMarkers.push(marker);
+            });
+
+            // Add the initial layer
+            destinationMarkers.addLayers(allExplorerMarkers);
+            map.addLayer(destinationMarkers); 
+            renderFilterChips(); 
+        }
+
+        // --- 6. CORE STATE MANAGEMENT ---
+
+        function clearTemporaryMarkers() {
+            if (externalSearchMarker) {
+                map.removeLayer(externalSearchMarker);
+                externalSearchMarker = null;
+            }
+            if (userMarker) {
+                map.removeLayer(userMarker);
+                userMarker = null;
+            }
+            if (suggestMarker) {
+                map.removeLayer(suggestMarker);
+                suggestMarker = null;
+            }
+            clearRoute();
+        }
+
+        function resetMap() {
+            clearTemporaryMarkers();
+            map.setView([30.0667, 79.0193], 8);
+            document.getElementById('searchInput').value = '';
+            filterMarkers('All'); // Reset filter
+        }
+
+        // --- 7. APPLICATION SWITCHING LOGIC ---
+
+        function switchApp(app, btnElement) {
+            currentApp = app;
+            currentFilter = 'All'; 
+
+            document.querySelectorAll('.app-btn').forEach(btn => {
+                btn.classList.remove('active-explorer', 'active-essentials');
+            });
+            btnElement.classList.add(`active-${app}`);
+
+            map.removeLayer(currentActiveLayer);
+            currentActiveLayer.clearLayers(); // Clear old markers completely
+
+            if (app === 'explorer') {
+                document.body.style.setProperty('--primary', '#f59e0b');
+                document.body.style.setProperty('--fab-suggest-color', 'var(--primary)'); 
+                currentActiveLayer = destinationMarkers;
+                currentActiveLayer.addLayers(allExplorerMarkers); // Re-add all markers
+            } else { // essentials
+                document.body.style.setProperty('--primary', 'var(--accent-green)');
+                document.body.style.setProperty('--fab-suggest-color', 'var(--accent-green)'); 
+                currentActiveLayer = serviceMarkers;
+                currentActiveLayer.addLayers(allEssentialMarkers); // Re-add all markers
+            }
+            map.addLayer(currentActiveLayer);
+
+            renderFilterChips(); 
+            filterMarkers(currentFilter);
+            
+            document.getElementById('searchInput').value = ''; 
+            clearTemporaryMarkers(); 
+            document.getElementById('routesPanel').classList.remove('active');
+        }
+
+        // --- 8. FILTER CHIP LOGIC ---
+        
+        function getCategories() {
+            if (currentApp === 'explorer') {
+                return ["All", ...new Set(touristDestinations.map(d => d.type))];
+            } else {
+                return ["All", ...new Set(serviceLocations.map(s => s.type))];
+            }
+        }
+
+        function renderFilterChips() {
+            const container = document.getElementById('filterChips');
+            container.innerHTML = '';
+            const categories = getCategories();
+            categories.forEach(cat => {
+                const chip = document.createElement('button');
+                chip.className = 'chip';
+                if (cat === currentFilter) chip.classList.add('active');
+                if (currentApp === 'essentials' && cat !== 'All') chip.setAttribute('data-category', cat);
+                let icon = '';
+                if (currentApp === 'explorer') {
+                    icon = cat === 'All' ? '<i class="fas fa-globe"></i>' : `<i class="${explorerIcons[cat]}"></i>`;
+                } else if (cat !== 'All') {
+                    icon = `<i class="${essentialIcons[cat].icon}"></i>`;
+                } else {
+                    icon = '<i class="fas fa-list-ul"></i>';
+                }
+                chip.innerHTML = `${icon} ${cat}`;
+                chip.onclick = () => filterMarkers(cat);
+                container.appendChild(chip);
+            });
+        }
+
+        function filterMarkers(category) {
+            currentFilter = category;
+            
+            document.querySelectorAll('.chip').forEach(c => {
+                const catName = c.textContent.trim().split(' ').pop(); 
+                if (catName === category) {
+                    c.classList.add('active');
+                } else {
+                    c.classList.remove('active');
+                }
+            });
+
+            // Use the comprehensive list of markers for the current app
+            const allMarkers = currentApp === 'explorer' ? allExplorerMarkers : allEssentialMarkers;
+            const allData = currentApp === 'explorer' ? touristDestinations : serviceLocations;
+
+            // 1. Clear the active layer
+            currentActiveLayer.clearLayers();
+
+            // 2. Filter and re-add only matching markers
+            allMarkers.forEach(marker => {
+                // Find the original data item linked to the marker
+                const item = allData.find(d => 
+                    d.lat.toFixed(5) == marker.getLatLng().lat.toFixed(5) && 
+                    d.lng.toFixed(5) == marker.getLatLng().lng.toFixed(5)
+                );
+
+                if (item && (category === 'All' || item.type === category)) {
+                    currentActiveLayer.addLayer(marker);
+                }
+            });
+
+            clearTemporaryMarkers();
+        }
+        
+        // --- 9. SEARCH & GEOCODING LOGIC (Refined) ---
+
+        // Internal Search: Filters existing markers as the user types (oninput)
+        function handleSearch(query) {
+            const normalizedQuery = query.toLowerCase().trim();
+            const allMarkers = currentApp === 'explorer' ? allExplorerMarkers : allEssentialMarkers;
+            const allData = currentApp === 'explorer' ? touristDestinations : serviceLocations;
+
+            currentActiveLayer.clearLayers(); 
+
+            if (normalizedQuery === '') {
+                filterMarkers(currentFilter); // Revert to current filter state
+                return;
+            }
+
+            allMarkers.forEach(marker => {
+                const item = allData.find(d => 
+                    d.lat.toFixed(5) == marker.getLatLng().lat.toFixed(5) && 
+                    d.lng.toFixed(5) == marker.getLatLng().lng.toFixed(5)
+                );
+                
+                const searchMatch = normalizedQuery === '' || 
+                    (item.name && item.name.toLowerCase().includes(normalizedQuery)) || 
+                    (item.desc && item.desc.toLowerCase().includes(normalizedQuery)) || 
+                    (item.addr && item.addr.toLowerCase().includes(normalizedQuery));
+                
+                const filterMatch = currentFilter === 'All' || item.type === currentFilter;
+
+                if (item && searchMatch && filterMatch) {
+                    currentActiveLayer.addLayer(marker);
+                }
+            });
+        }
+        
+        // External Search: Calls Nominatim API when user presses Enter
+        async function geocodeExternal(query) {
+            if (query.trim() === '') return;
+
+            const searchIcon = document.getElementById('searchIcon');
+            const searchInput = document.getElementById('searchInput');
+
+            // 1. Loading State and State Clear
+            searchIcon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            searchInput.disabled = true;
+            clearTemporaryMarkers(); 
+            currentActiveLayer.clearLayers(); // Clear internal markers for a focused external result
+            
+            // 2. API Call (Nominatim)
+            // Constrain search to Uttarakhand area (approximate bounding box)
+            const bounds = [77.5, 28.5, 81.0, 31.5]; // lon_min, lat_min, lon_max, lat_max
+
+            const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&viewbox=${bounds.join(',')}&bounded=1`;
+            
+            try {
+                const response = await fetch(nominatimUrl);
+                const data = await response.json();
+
+                if (data && data.length > 0) {
+                    const result = data[0];
+                    const lat = parseFloat(result.lat);
+                    const lon = parseFloat(result.lon);
+                    
+                    // 3. Plot Result
+                    const externalItem = { lat, lon, display_name: result.display_name };
+                    
+                    externalSearchMarker = L.marker([lat, lon], {
+                        icon: createCustomIcon(externalItem, false, true), 
+                        title: externalItem.display_name
+                    }).addTo(map)
+                    .bindPopup(createExternalPopup(externalItem)).openPopup();
+                    
+                    map.setView([lat, lon], 14);
+
+                } else {
+                    alert(`No external results found for "${query}". Try refining your query or use the filter chips for internal locations.`);
+                }
+            } catch (error) {
+                console.error("External Geocoding Error:", error);
+                alert("Failed to connect to the external search service. Please try again.");
+            } finally {
+                // 4. Reset State
+                searchIcon.innerHTML = '<i class="fas fa-search"></i>';
+                searchInput.disabled = false;
+                searchInput.focus();
+                
+                // If the external search failed or returned no result, re-display the internal markers
+                if (!externalSearchMarker) {
+                    filterMarkers(currentFilter);
+                }
+            }
+        }
+
+        // --- 10. UTILITY & LOCATION FUNCTIONS ---
+        
+        function drawUserLocation(lat, lng) {
+            clearTemporaryMarkers(); // Clears everything else first
+            
+            const userIcon = L.divIcon({
+                className: 'custom-pin',
+                html: `<div class="pin-inner pulse" style="background: var(--secondary); border-color: white; color: white;"><i class="fas fa-crosshairs"></i></div>`,
+                iconSize: [40, 40],
+                iconAnchor: [20, 40],
+                popupAnchor: [0, -30]
+            });
+            userMarker = L.marker([lat, lng], { icon: userIcon }).addTo(map)
+                .bindPopup('<b>You Are Here</b>').openPopup();
+            map.setView([lat, lng], 14); 
+        }
+
+        function getUserLocationAndSuggest() {
+            const fab = document.getElementById('suggestFab');
+            fab.disabled = true;
+            fab.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    drawUserLocation(lat, lng);
+                    findClosestPOI(lat, lng);
+
+                    fab.disabled = false;
+                    fab.innerHTML = '<i class="fas fa-location-crosshairs"></i>';
+                }, (error) => {
+                    console.error("Geolocation Error:", error);
+                    alert("Unable to retrieve your location. Check device settings and ensure you are using a secure context (https).");
+                    fab.disabled = false;
+                    fab.innerHTML = '<i class="fas fa-location-crosshairs"></i>';
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+                fab.disabled = false;
+                fab.innerHTML = '<i class="fas fa-location-crosshairs></i>';
+            }
+        }
+
+        function findClosestPOI(userLat, userLng) {
+            const dataSet = currentApp === 'explorer' ? touristDestinations : serviceLocations;
+            let closestItem = null;
+            let minDistanceSq = Infinity; 
+            
+            // Clear current filter state visually to focus on suggestion
+            currentActiveLayer.clearLayers();
+
+            dataSet.forEach(item => {
+                if (currentFilter !== 'All' && item.type !== currentFilter) return;
+
+                const latDiff = item.lat - userLat;
+                const lngDiff = item.lng - userLng;
+                const distanceSq = (latDiff * latDiff) + (lngDiff * lngDiff);
+
+                if (distanceSq < minDistanceSq) {
+                    minDistanceSq = distanceSq;
+                    closestItem = item;
+                }
+            });
+
+            if (closestItem) {
+                plotSuggestionMarker(closestItem);
+            } else {
+                alert("No locations found in the current filter category near you.");
+                filterMarkers(currentFilter); // Revert to showing all filtered markers if no suggestion found
+            }
+        }
+
+        function plotSuggestionMarker(item) {
+            if (suggestMarker) map.removeLayer(suggestMarker);
+
+            const popupContent = currentApp === 'explorer' ? createDestinationPopup(item) : createServicePopup(item);
+
+            suggestMarker = L.marker([item.lat, item.lng], {
+                icon: createCustomIcon(item, true), 
+                title: item.name
+            }).addTo(map)
+            .bindPopup(popupContent) 
+            .openPopup(); 
+            
+            if (userMarker) {
+                const bounds = L.latLngBounds(userMarker.getLatLng(), suggestMarker.getLatLng());
+                map.fitBounds(bounds, { padding: [100, 100] });
+            } else {
+                map.setView([item.lat, item.lng], 14);
+            }
+        }
+
+        function emergencySOS() {
+            alert("🚨 EMERGENCY SOS ACTIVATED 🚨\n\nAttempting to call Uttarakhand Emergency Services (108/100/1070). Please stay calm and share your location details.");
+            window.location.href = 'tel:108';
+        }
+
+        // --- 11. ROUTE AND DIRECTIONS LOGIC (UPDATED) ---
+
+        function toggleRoutes() {
+            const panel = document.getElementById('routesPanel');
+            panel.classList.toggle('active');
+            clearRoute();
+        }
+
+        function clearRoute() {
+            // Remove the L.Routing.Control instance
+            if (routingControl) {
+                map.removeControl(routingControl);
+                routingControl = null;
+            }
+            
+            // Ensure all custom route buttons are deactivated
+            document.querySelectorAll('.routes-container button').forEach(btn => btn.classList.remove('active'));
+            
+            // Optional: Re-fit map to Uttarakhand bounds after clearing route
+            if (!userMarker && !externalSearchMarker) {
+                map.setView([30.0667, 79.0193], 8);
+            }
+        }
+
+        function requestRouteTo(lat, lng, name) {
+            if (!userMarker) {
+                const fab = document.getElementById('suggestFab');
+                fab.style.boxShadow = '0 0 0 10px rgba(255, 107, 107, 0.7)'; 
+                setTimeout(() => fab.style.boxShadow = '', 1000);
+
+                alert("Please click the 'Find Nearby' (crosshairs) button first to set your current location before requesting a route.");
+                return;
+            }
+
+            const userLat = userMarker.getLatLng().lat;
+            const userLng = userMarker.getLatLng().lng;
+            
+            clearRoute(); // Clear any existing routes
+
+            // Initialize Leaflet Routing Machine for real routing
+            routingControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(userLat, userLng),
+                    L.latLng(lat, lng)
+                ],
+                routeWhileDragging: false,
+                showAlternatives: false,
+                lineOptions: {
+                    styles: [{ color: 'var(--accent-purple)', weight: 6, opacity: 0.8 }]
+                },
+                router: L.Routing.osrmv1({
+                    serviceUrl: 'https://router.project-osrm.org/route/v1',
+                    profile: 'driving' // Use driving profile
+                }),
+                alt: 'Route to ' + name, 
+                fitSelectedRoutes: true,
+                collapsible: true, // Allow collapsing the instructions panel
+                show: true
+            }).addTo(map);
+
+            // Hide the curated routes panel if it's open
+            document.getElementById('routesPanel').classList.remove('active');
+        }
+
+        const curatedRoutes = {
+            'charDham': [ 
+                [30.0869, 78.2676, "Rishikesh (Start)"], // Rishikesh
+                [30.9990, 78.7680, "Gangotri"], // Gangotri
+                [31.0108, 78.4279, "Yamunotri"], // Yamunotri
+                [30.7352, 79.0669, "Kedarnath"], // Kedarnath
+                [30.7447, 79.4930, "Badrinath"], // Badrinath
+                [30.0869, 78.2676, "Rishikesh (End)"]  // Back to Rishikesh 
+            ],
+            'panchKedar': [
+                [30.290, 78.980, "Rudraprayag (Start)"], // Rudraprayag
+                [30.4884, 79.2158, "Tungnath Temple"], // Tungnath
+                [30.6400, 79.2000, "Madmaheshwar"], // Madmaheshwar
+                [30.5000, 79.3100, "Rudranath"], // Rudranath (Approximation)
+                [30.4350, 79.4300, "Kalpeshwar"], // Kalpeshwar (Approximation)
+                [30.290, 78.980, "Rudraprayag (End)"] // Back to Rudraprayag
+            ],
+            'kumaon': [
+                [29.3800, 79.4600, "Nainital (Start)"], // Nainital
+                [29.8510, 79.5970, "Kausani"], // Kausani
+                [30.0600, 80.2500, "Munsiyari"], // Munsiyari
+                [29.7460, 80.0930, "Patal Bhuvaneshwar"], // Patal Bhuvaneshwar
+                [29.3800, 79.4600, "Nainital (End)"] // Back to Nainital
+            ]
+        };
+
+        function drawRoute(routeName) {
+            const routePoints = curatedRoutes[routeName];
+            if (routePoints) {
+                clearRoute(); 
+                
+                document.querySelectorAll('.routes-container button').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`[onclick="drawRoute('${routeName}')"]`).classList.add('active');
+
+                // Map route points to Leaflet waypoints format with custom names
+                const waypoints = routePoints.map(coord => L.Routing.waypoint(L.latLng(coord[0], coord[1]), coord[2]));
+
+                // Initialize Leaflet Routing Machine for multi-point route
+                routingControl = L.Routing.control({
+                    waypoints: waypoints,
+                    routeWhileDragging: false,
+                    showAlternatives: false,
+                    lineOptions: {
+                        styles: [{ color: 'var(--accent-purple)', weight: 6, opacity: 0.8 }]
+                    },
+                    router: L.Routing.osrmv1({
+                        serviceUrl: 'https://router.project-osrm.org/route/v1',
+                        profile: 'driving' 
+                    }),
+                    alt: routeName.charAt(0).toUpperCase() + routeName.slice(1) + ' Curated Journey',
+                    fitSelectedRoutes: true,
+                    collapsible: true, 
+                    show: true
+                }).addTo(map);
+
+                // Timeout to close the panel
+                setTimeout(() => document.getElementById('routesPanel').classList.remove('active'), 500);
+
+            } else {
+                alert("Route data not found.");
+            }
+        }
+
+
+        // Global listener for the search input enter key
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                // When Enter is pressed, perform the external geocoding search
+                geocodeExternal(this.value);
+            }
+        });
+
+        // --- 12. INITIALIZATION ---
+
+        plotAllMarkers();
+    </script>
+</body>
+</html>

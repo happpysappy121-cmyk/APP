@@ -1,0 +1,2456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uttarakhand Travel App - Soul of the Himalayas</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* ==================== THEME VARIABLES (Himalayan Soul - Light Theme) ==================== */
+        :root {
+            /* Global Light Theme */
+            --bg-dark: #ffffff; /* Light background */
+            --primary: #f59e0b; /* Golden Yellow/Saffron for spiritual touch */
+            --secondary: #3b82f6; 
+            --glass-bg-base: 248, 250, 252;
+            --glass-bg: rgba(var(--glass-bg-base), 0.8); /* Light Glass effect */
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --success: #22c55e;
+            --danger: #ef4444;
+            
+            /* Spacing & Layout */
+            --base-padding: 24px;
+            --nav-height: 90px; /* Reduced since the bar is closer to the edge */
+            --header-offset: 20px; 
+            --sticky-header-height: 80px;
+        }
+
+        /* ==================== BASE STYLING ==================== */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #fff;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* To prevent scrollbars on the body */
+        }
+
+        /* Scrollbar Hiding */
+        .view-container::-webkit-scrollbar { width: 0px; background: transparent; }
+        
+        /* ==================== GLASSMORPHISM ==================== */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 15px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        /* ==================== CARDS ==================== */
+        .glass-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.01)); 
+            border: 1px solid var(--glass-border);
+            border-radius: 20px; 
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .glass-card:active { 
+            transform: scale(0.98); 
+            box-shadow: 0 2px 10px 0 rgba(0, 0, 0, 0.3);
+        }
+        
+        .info-card {
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        .info-card h3 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .info-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .info-card li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .info-card li:last-child {
+            border-bottom: none;
+        }
+        .info-card li i {
+            color: var(--secondary);
+            margin-right: 10px;
+            width: 20px; 
+            text-align: center;
+        }
+        .info-card li .label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .info-card li .value {
+            color: var(--text-main);
+            font-weight: 600;
+            text-align: right;
+        }
+        .info-card table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .info-card th, .info-card td {
+            padding: 10px 0;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.85rem;
+        }
+        .info-card th {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .info-card td {
+            color: var(--text-main);
+        }
+
+        /* ==================== LAYOUT & TRANSITIONS ==================== */
+        .view-container {
+            position: fixed; /* Use fixed for full viewport coverage */
+            top: 0;
+            left: 0;
+            width: 100vw; /* Use vw/vh for full screen */
+            height: 100vh;
+            overflow-y: auto;
+            padding-bottom: var(--nav-height); 
+            color: var(--text-main);
+            
+            transform: translateX(100%);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s;
+            
+            background: var(--bg-dark); /* Default dark background for all views */
+            z-index: 10; 
+        }
+        .view-container.active {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: all;
+            z-index: 20; 
+        }
+        /* ==================== NAVIGATION & BUTTONS ==================== */
+        .back-button {
+            position: sticky;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+            cursor: pointer;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            margin-left: var(--base-padding);
+            margin-bottom: 20px;
+        }
+
+
+        /* ==================== HOME VIEW ==================== */
+        #view-home { 
+            overflow-y: scroll; 
+            overflow-x: hidden; 
+            padding-bottom: 0; 
+            /* NEW: Apply the background image to the home view */
+            background-image: url('https://media.istockphoto.com/id/1160209852/photo/himalaya-snow-peaks-with-barren-mountain-ranges-at-uttarakhand-india.jpg?s=612x612&w=0&k=20&c=Ou21NYb6wejPVJFLzkudfKTzIqzqTvwvC2oxsA_YdgI='); 
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed; /* Makes the background fixed while content scrolls */
+            
+            /* Gradients for a light/himalayan look */
+            background-color: var(--bg-dark);
+            background-blend-mode: overlay;
+        }
+
+        .header-top {
+            padding: 20px var(--base-padding) 10px; /* Adjusted padding for full screen */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50; 
+            /* Soft header gradient */
+            background: linear-gradient(to bottom, var(--bg-dark), rgba(var(--glass-bg-base), 0.9));
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            min-height: var(--sticky-header-height);
+        }
+        
+        /* ==================== CONTENT SECTIONS ==================== */
+        .content-section {
+            margin-top: 0; 
+            padding: 0 var(--base-padding) var(--nav-height); 
+            /* Ensure the content section maintains the dark background */
+            background: var(--bg-dark); 
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border-radius: 30px 30px 0 0;
+            position: relative;
+            z-index: 20;
+            animation: slideUp 1s ease-out 0.5s both;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+
+        /* ==================== SLIDESHOW ==================== */
+        .slideshow-wrapper {
+            width: 100%;
+            height: 50vh; 
+            position: relative;
+            overflow: hidden;
+            background: #111;
+        }
+
+        #slideshow-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .slide {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+        }
+
+        .slide.active {
+            opacity: 1;
+        }
+
+        .slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(1.1) contrast(1.1); 
+        }
+
+        .slide-caption {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            animation: fadeInUp 1s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        /* ==================== SLIDESHOW CONTROLS ==================== */
+        .slideshow-text-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 20px var(--base-padding) 20px; /* Adjusted padding for full screen */
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.5) 40%, rgba(0, 0, 0, 0.2) 70%, rgba(0, 0, 0, 0) 100%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; 
+            height: 100%; 
+        }
+
+        .center-title {
+            text-align: center; 
+            margin-top: auto; 
+            margin-bottom: auto; 
+        }
+
+        .slideshow-dots {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 15;
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .dot.active {
+            background: var(--primary);
+        }
+
+        /* ==================== SEARCH ==================== */
+        .search-bar-container {
+            margin-top: -35px; 
+            position: relative;
+            z-index: 30; 
+            margin-bottom: 20px; 
+        }
+        
+        /* ==================== HOME CARDS ==================== */
+        .search-box {
+            height: 55px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+        .search-box input {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            padding-left: 15px;
+            width: 100%;
+            outline: none;
+            font-weight: 500;
+        }
+        
+        .quick-access-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+        .access-card {
+            padding: 15px 5px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .access-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        .access-card i {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 8px;
+            transition: transform 0.3s ease;
+        }
+        .access-card:hover i {
+            transform: scale(1.2);
+        }
+        .access-card p {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-main);
+            line-height: 1.2;
+        }
+
+        .featured-card {
+            margin-bottom: 30px;
+            height: 500px;
+            border-radius: 20px;
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            padding: 20px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        .featured-slideshow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        .featured-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+        .featured-slide.active {
+            opacity: 1;
+        }
+        .featured-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .featured-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.1));
+            border-radius: inherit;
+        }
+        .featured-info {
+            z-index: 2;
+            color: white;
+        }
+        .featured-info h3 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+        .featured-info p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* ==================== BUTTONS ==================== */
+        .view-all-btn {
+            background: var(--primary);
+            color: var(--bg-dark);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: transform 0.2s;
+        }
+        .view-all-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* ==================== POPULAR PLACES ==================== */
+        .popular-places-grid {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            overflow-x: hidden;
+            width: 100%;
+            transition: transform 0.3s ease;
+        }
+        .popular-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            min-width: 120px;
+            flex-shrink: 0;
+        }
+        .popular-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .popular-card img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 6px;
+        }
+        .popular-card h4 {
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+            color: var(--text-main);
+        }
+        .popular-card p {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+        #load-more-btn {
+            grid-column: 1 / -1;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        #load-more-btn:hover {
+            background: var(--primary);
+        }
+
+        /* ==================== SCROLL CARDS ==================== */
+        .scroll-block-container {
+            display: flex;
+            flex-direction: row;
+            overflow-x: auto;
+            gap: 15px;
+            padding-bottom: 20px;
+        }
+
+        .destination-slide {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 15px;
+            width: 900px;
+            flex-shrink: 0;
+        }
+
+        .safari-card, .trending-card {
+            height: 140px;
+            padding: 15px;
+            background-size: cover !important;
+            background-position: center !important;
+            border-radius: 20px;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: flex-end;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeInScale 0.8s ease-out both;
+            animation-delay: calc(var(--index, 0) * 0.1s);
+        }
+        .safari-card:hover, .trending-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+        .safari-card::before, .trending-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0));
+            border-radius: inherit;
+        }
+        .safari-info, .trending-info {
+            z-index: 2;
+        }
+        .safari-info h4, .trending-info h4 {
+            font-size: 1.1rem;
+            line-height: 1.2;
+            color: white;
+            font-weight: 700;
+        }
+
+        /* ==================== WHY UTTARAKHAND ==================== */
+        .why-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .why-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .why-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+        .why-card i {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        .why-card h4 {
+            font-size: 1rem;
+            margin-bottom: 5px;
+            color: var(--text-main);
+        }
+        .why-card p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* ==================== EVENTS ==================== */
+        .event-card {
+            min-width: 70vw;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 20px;
+            border-left: 4px solid var(--primary); 
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        .event-card h4 {
+            font-size: 1.1rem;
+            color: var(--primary);
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        /* ==================== NAVIGATION ==================== */
+        .sos-container {
+            padding: 0 var(--base-padding) 20px;
+        }
+        .sos-button {
+            width: 100%;
+            padding: 20px;
+            background: var(--danger);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .sos-button:active {
+            transform: scale(0.98);
+            background: #c52929;
+        }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            padding: 0 var(--base-padding) 20px;
+        }
+        
+        .menu-list {
+            padding: 0 var(--base-padding) 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            cursor: pointer;
+            background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.01)); 
+            border: none; 
+            border-radius: 15px;
+        }
+        .menu-item .menu-icon {
+            font-size: 1.1rem;
+            color: var(--primary);
+            margin-right: 15px;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Enhanced Menu Styles */
+        .menu-section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin: 20px var(--base-padding) 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+        }
+        .menu-section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: var(--base-padding);
+            width: 50px;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 1px;
+        }
+        .menu-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            background: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            transition: all 0.3s ease;
+        }
+        .menu-item:active {
+            transform: translateY(0);
+        }
+        .menu-stat-card {
+            text-align: center;
+            padding: 25px 20px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .menu-stat-card:hover {
+            transform: scale(1.05);
+        }
+        .menu-stat-card h4 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .menu-stat-card p {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+        .user-avatar {
+            border: 3px solid white !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+            transition: transform 0.3s ease;
+        }
+        .user-avatar:hover {
+            transform: scale(1.1);
+        }
+        .sos-button {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+        .menu-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: var(--base-padding);
+            border-radius: 0 0 30px 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .menu-header h1 {
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .menu-header p {
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* ==================== BOTTOM NAVIGATION ==================== */
+        .nav-bar {
+            position: fixed; 
+            bottom: 25px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            height: 65px;
+            border-radius: 20px; 
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100; 
+            padding: 0 5px;
+            max-width: 350px; 
+            width: calc(100% - 40px); 
+        }
+        
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-grow: 1;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 12px;
+            color: #e0f2fe; 
+            transition: all 0.2s ease;
+            min-width: 60px;
+        }
+        
+        .nav-btn i {
+            font-size: 1.2rem;
+            margin-bottom: 3px;
+            transition: transform 0.2s;
+        }
+
+        .nav-btn span {
+            font-size: 0.65rem;
+            font-weight: 500;
+        }
+
+        .nav-btn.active {
+            background: var(--primary);
+            color: var(--bg-dark) !important; 
+            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.5);
+        }
+
+        /* ==================== EXPLORE ==================== */
+        .filter-btn {
+            padding: 8px 12px;
+            border-radius: 20px;
+            border: none;
+            background: var(--glass-bg);
+            color: var(--text-main);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* ==================== TOGGLES ==================== */
+        .toggle-switch.active {
+            background: var(--success) !important;
+        }
+        .toggle-switch.active span {
+            transform: translateX(18px) !important;
+        }
+        
+        /* ==================== TYPOGRAPHY ==================== */
+        h1 { font-size: 2rem; color: var(--text-main); line-height: 1.1; margin-bottom: 5px; font-weight: 700;}
+        h2 { font-size: 1.4rem; color: var(--text-main); margin-bottom: 15px; font-weight: 600;}
+        h3 { font-size: 1.1rem; color: var(--text-main); font-weight: 600; }
+        p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; }
+        .text-sm { font-size: 0.8rem; }
+        .flex-row { display: flex; align-items: center; gap: 10px; }
+        .icon-lg { font-size: 1.5rem; }
+
+        /* ==================== SERVICES ==================== */
+        .service-header {
+            padding: 20px var(--base-padding);
+        }
+        .service-card {
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+        .service-card h3 {
+            font-size: 1.3rem;
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+        .service-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .service-card li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        .service-card li i {
+            color: var(--primary);
+            margin-right: 10px;
+        }
+        .search-results-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 15px;
+        }
+        .search-results-list li {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .search-results-list li:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .search-results-list li .result-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .search-results-list li .result-details {
+            display: flex;
+            gap: 15px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+        .search-results-list li .rating {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        /* ==================== AUTH ==================== */
+        #view-auth {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: var(--base-padding);
+            background: linear-gradient(180deg, var(--bg-dark) 0%, rgba(var(--glass-bg-base), 0.9) 100%),
+                        url('https://images.unsplash.com/photo-1596700810756-3b1236592231?q=80&w=600') center/cover;
+            background-blend-mode: overlay;
+        }
+        .auth-form-container {
+            width: 100%;
+            max-width: 350px;
+            padding: 30px;
+        }
+        .auth-form-container h2 {
+            font-size: 2rem;
+            margin-bottom: 25px;
+            color: var(--primary);
+            text-shadow: 0 0 5px rgba(245, 158, 11, 0.5);
+        }
+        .auth-form-container input {
+            width: 100%;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .auth-form-container input:focus {
+            border-color: var(--primary);
+        }
+        .auth-form-container button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            margin-bottom: 10px;
+        }
+        .auth-form-container button:active {
+            transform: scale(0.99);
+        }
+        .auth-toggle-link {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            margin-top: 15px;
+            display: block;
+            text-decoration: underline;
+        }
+        .guest-button {
+            background: rgba(var(--glass-bg-base), 0.8);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+            margin-top: 20px;
+        }
+        .guest-button i {
+            margin-right: 10px;
+        }
+        #login-form, #signup-form {
+            transition: opacity 0.3s;
+        }
+        .hidden-form {
+            display: none;
+        }
+
+        /* Explore Page Enhancements */
+        .explore-card {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .explore-card:hover .save-btn {
+            transform: scale(1.1);
+        }
+        .explore-btn:hover {
+            background: var(--secondary) !important;
+            transform: translateY(-1px);
+        }
+        .filter-btn {
+            transition: all 0.3s ease;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-weight: 600;
+        }
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+        }
+        .explore-list-container {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Enhanced Search */
+        .search-box {
+            transition: all 0.3s ease;
+        }
+        .search-box:focus-within {
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.15);
+            transform: translateY(-2px);
+        }
+        #clear-search:hover {
+            color: var(--danger);
+        }
+
+        /* Home Page Enhancements */
+
+        @media (max-width: 768px) {
+            .scroll-block-container {
+                gap: 10px;
+            }
+            .destination-slide {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(2, 1fr);
+                gap: 10px;
+                width: 600px;
+            }
+            .safari-card, .trending-card {
+                height: 120px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="view-auth" class="view-container active">
+        <div class="auth-form-container glass-card">
+            
+            <h1 style="font-size: 3rem; color: var(--primary); margin-bottom: 5px;">Soul</h1>
+            <h2 style="font-size: 1.5rem; color: var(--text-main); margin-bottom: 30px;">of the Himalayas</h2>
+
+            <div id="login-form">
+                <h3 style="color: var(--text-main); margin-bottom: 20px;">Welcome Back!</h3>
+                <input type="email" placeholder="Email Address" required>
+                <input type="password" placeholder="Password" required>
+                <button style="background: var(--primary); color: var(--bg-dark);" onclick="authSuccess('Explorer')">
+                    <i class="fas fa-sign-in-alt"></i> LOGIN
+                </button>
+                <a class="auth-toggle-link" onclick="toggleAuth('signup')">Don't have an account? Sign Up</a>
+            </div>
+
+            <div id="signup-form" class="hidden-form">
+                <h3 style="color: var(--text-main); margin-bottom: 20px;">Create Account</h3>
+                <input type="text" placeholder="Full Name" required>
+                <input type="email" placeholder="Email Address" required>
+                <input type="password" placeholder="Create Password" required>
+                <button style="background: var(--secondary); color: white;" onclick="authSuccess('New User')">
+                    <i class="fas fa-user-plus"></i> SIGN UP
+                </button>
+                <a class="auth-toggle-link" onclick="toggleAuth('login')">Already have an account? Login</a>
+            </div>
+
+            <div style="width: 80%; height: 1px; background: rgba(255,255,255,0.1); margin: 30px auto 10px;"></div>
+            
+            <button class="guest-button" onclick="signInAsGuest()">
+                <i class="fas fa-user"></i> SIGN IN AS GUEST
+            </button>
+        </div>
+        <p class="text-sm" style="margin-top: 20px;">By continuing, you agree to our terms.</p>
+    </div>
+    <div id="view-home" class="view-container">
+        
+        <div class="slideshow-wrapper">
+            <div id="slideshow-inner">
+                </div>
+
+            <div class="slideshow-text-overlay">
+                
+                <div class="top-header-overlay flex-row" style="justify-content: space-between;">
+                    <div>
+                        <p class="text-sm" id="dynamic-greeting-time" style="text-shadow: 0 3px 10px rgba(0,0,0,0.95), 0 0 25px rgba(0,0,0,0.9), 0 0 50px rgba(0,0,0,0.8);">Good Evening, Sunny 22°C</p>
+                        <h3 id="user-greeting" style="text-shadow: 0 3px 10px rgba(0,0,0,0.95), 0 0 25px rgba(0,0,0,0.9), 0 0 50px rgba(0,0,0,0.8);">Explorer 👋</h3>
+                    </div>
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200" class="user-avatar" onclick="navTo('menu')" style="width: 45px; height: 45px; margin: 0; border: 2px solid var(--primary); border-radius: 50%; cursor: pointer;">
+                </div>
+                
+                <div class="center-title">
+                </div>
+            </div>
+
+            <div class="slideshow-dots" id="slideshow-dots"></div>
+        </div>
+
+        <div class="search-bar-container" style="padding: 0 var(--base-padding);">
+            <div class="glass search-box">
+                <i class="fas fa-search" style="margin-right: 15px; color: var(--primary);"></i>
+                <input type="text" placeholder="Search sacred temples or wild trails..." id="home-search-input" onfocus="showRecommendations()" onblur="hideRecommendations()" oninput="filterRecommendations(this.value)">
+                
+                <div id="search-recommendations" class="glass" style="position: absolute; top: 100%; left: 0; right: 0; padding: 15px; border-radius: 15px; margin-top: 10px; display: none; z-index: 60; background: rgba(7, 9, 19, 0.95); border-top: none;">
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            
+            <h2>Featured Destination</h2>
+            <div class="featured-card" onclick="showDetail(1)">
+                <div class="featured-slideshow">
+                    <div class="featured-slide active">
+                        <img src="http://cdn.pixabay.com/photo/2015/11/13/15/01/india-1042098_1280.jpg" alt="Rishikesh">
+                    </div>
+                    <div class="featured-slide">
+                        <img src="http://cdn.pixabay.com/photo/2020/02/09/06/50/auli-4832101_1280.jpg" alt="Auli">
+                    </div>
+                    <div class="featured-slide">
+                        <img src="http://cdn.pixabay.com/photo/2020/08/01/12/18/winnats-pass-5455265_1280.jpg" alt="Valley of Flowers">
+                    </div>
+                </div>
+                <!-- <div class="featured-info">
+                    <h3>Rishikesh - Yoga Capital</h3>
+                    <p>Discover the spiritual heart of Uttarakhand with ashrams, rafting, and divine Ganga aarti.</p>
+                </div> -->
+            </div>
+            
+            <h2>Quick Access</h2>
+            <div class="quick-access-grid">
+                <div class="glass-card access-card" onclick="filterExplore('Pilgrimage')">
+                    <i class="fas fa-om"></i>
+                    <p>Char Dham</p>
+                </div>
+                <div class="glass-card access-card" onclick="filterExplore('Safari')">
+                    <i class="fas fa-paw"></i>
+                    <p>Wildlife Safari</p>
+                </div>
+                <div class="glass-card access-card" onclick="filterExplore('Trekking')">
+                    <i class="fas fa-hiking"></i>
+                    <p>Himalayan Treks</p>
+                </div>
+                <div class="glass-card access-card" onclick="openServiceView('hotels')">
+                    <i class="fas fa-hotel"></i>
+                    <p>Hotels & Stays</p>
+                </div>
+                <div class="glass-card access-card" onclick="openServiceView('transport')">
+                    <i class="fas fa-bus-alt"></i>
+                    <p>Travel & Transport</p>
+                </div>
+                <div class="glass-card access-card" onclick="openServiceView('guides')">
+                    <i class="fas fa-user-shield"></i>
+                    <p>Guides & Services</p>
+                </div>
+            </div>
+
+            <h2>Why Uttarakhand?</h2>
+            <div class="why-grid">
+                <div class="why-card" onclick="filterExplore('Pilgrimage')">
+                    <i class="fas fa-om"></i>
+                    <h4>Spiritual Journey</h4>
+                    <p>Home to sacred temples and the Char Dham pilgrimage, offering divine experiences.</p>
+                </div>
+                <div class="why-card" onclick="filterExplore('Adventure Activities')">
+                    <i class="fas fa-mountain"></i>
+                    <h4>Adventure Paradise</h4>
+                    <p>Trekking, rafting, skiing - endless thrills in the Himalayan wilderness.</p>
+                </div>
+                <div class="why-card" onclick="filterExplore('Nature Attractions')">
+                    <i class="fas fa-leaf"></i>
+                    <h4>Natural Beauty</h4>
+                    <p>Pristine lakes, valleys, and forests that rejuvenate the soul.</p>
+                </div>
+                <div class="why-card" onclick="filterExplore('Culture')">
+                    <i class="fas fa-music"></i>
+                    <h4>Rich Culture</h4>
+                    <p>Traditional festivals, folk music, and warm hospitality of the hills.</p>
+                </div>
+            </div>
+
+            <h2>Your Journey</h2>
+            <div class="glass-card" style="padding: 20px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <h4 style="margin-bottom: 5px;">Saved Places</h4>
+                        <p class="text-sm text-muted" id="saved-count">You have 0 saved destinations</p>
+                    </div>
+                    <button class="glass" style="padding: 10px 15px; border-radius: 20px; background: var(--secondary); color: white; border: none; cursor: pointer;" onclick="navTo('saved')">
+                        <i class="fas fa-heart" style="margin-right: 5px;"></i> View Saved
+                    </button>
+                </div>
+            </div>
+
+            <h2 style="margin-top: 10px;">Must Visit and Popular Destinations</h2>
+            <div class="scroll-block-container" id="trending-container">
+            </div>
+
+            <h2>Did You Know?</h2>
+            <div class="glass-card" style="padding: 20px; margin-bottom: 20px; text-align: center;">
+                <i class="fas fa-lightbulb" style="font-size: 2rem; color: var(--primary); margin-bottom: 10px;"></i>
+                <p id="fun-fact" style="font-size: 1rem; line-height: 1.5;">Uttarakhand is home to the source of two major rivers - the Ganges and the Yamuna.</p>
+                <button class="glass" style="margin-top: 10px; padding: 8px 15px; border-radius: 20px; background: var(--secondary); color: white; border: none; cursor: pointer;" onclick="showRandomFact()">
+                    <i class="fas fa-refresh" style="margin-right: 5px;"></i> Another Fact
+                </button>
+            </div>
+
+        </div>
+    </div>
+    
+    <div id="view-hotels" class="view-container">
+        <div class="back-button glass" onclick="navBack()"><i class="fas fa-arrow-left"></i></div>
+        <div class="service-header">
+            <h1 style="color: var(--primary);">Hotels & Stays</h1>
+            <p>Find the best accommodation across Uttarakhand. (Dummy Search)</p>
+        </div>
+        <div style="padding: 0 var(--base-padding);">
+            <div class="glass-card service-card">
+                <h3><i class="fas fa-search-location"></i> Search Availability</h3>
+                <div class="glass search-box" style="margin-bottom: 15px;">
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary);"></i>
+                    <input type="text" placeholder="e.g., Rishikesh, 2 guests, 3 nights..." id="hotel-search-input">
+                </div>
+                <button style="width: 100%; padding: 12px; background: var(--secondary); border: none; color: white; border-radius: 10px;" onclick="searchService('hotel')">Check Availability</button>
+                <ul id="hotel-search-results" class="search-results-list">
+                    </ul>
+            </div>
+            
+            <div class="glass-card service-card">
+                <h3><i class="fas fa-sort-amount-up"></i> Top Categories</h3>
+                <ul>
+                    <li onclick="alert('Viewing luxury resorts in Auli...');"><i class="fas fa-crown"></i>Luxury Resorts <span class="text-sm text-muted">Auli, Nainital</span> <i class="fas fa-chevron-right text-muted"></i></li>
+                    <li onclick="alert('Viewing budget homestays in Mukteshwar...');"><i class="fas fa-home"></i>Budget Homestays <span class="text-sm text-muted">Mukteshwar, Mussoorie</span> <i class="fas fa-chevron-right text-muted"></i></li>
+                    <li onclick="alert('Viewing spiritual ashrams in Haridwar...');"><i class="fas fa-om"></i>Spiritual Ashrams <span class="text-sm text-muted">Haridwar, Rishikesh</span> <i class="fas fa-chevron-right text-muted"></i></li>
+                    <li onclick="alert('Viewing mountain camping sites...');"><i class="fas fa-campground"></i>Mountain Camping Sites <span class="text-sm text-muted">Chopta, Deoriatal</span> <i class="fas fa-chevron-right text-muted"></i></li>
+                </ul>
+            </div>
+
+            <div style="height: 50px;"></div> 
+        </div>
+    </div>
+
+    <div id="view-transport" class="view-container">
+        <div class="back-button glass" onclick="navBack()"><i class="fas fa-arrow-left"></i></div>
+        <div class="service-header">
+            <h1 style="color: var(--primary);">Travel & Transport</h1>
+            <p>Your guide to moving around the Himalayas. (Dummy Search)</p>
+        </div>
+        <div style="padding: 0 var(--base-padding);">
+            <div class="glass-card service-card">
+                <h3><i class="fas fa-bus-alt"></i> Bus & Rail Bookings</h3>
+                <div class="glass search-box" style="margin-bottom: 15px;">
+                    <i class="fas fa-location-arrow" style="color: var(--primary);"></i>
+                    <input type="text" placeholder="Source City - Destination City (e.g., Dehradun - Delhi)" id="transport-search-input">
+                </div>
+                <button style="width: 100%; padding: 12px; background: var(--secondary); border: none; color: white; border-radius: 10px;" onclick="searchService('transport')">Find Routes</button>
+                <ul id="transport-search-results" class="search-results-list">
+                    </ul>
+            </div>
+
+            <div class="glass-card service-card">
+                <h3><i class="fas fa-car-side"></i> Private & Shared Services</h3>
+                <ul>
+                    <li onclick="alert('Booking a private SUV for hill travel...');"><i class="fas fa-taxi"></i>Book Private Taxi (SUV) <span class="text-sm text-muted">Recommended for families</span> <i class="fas fa-chevron-right text-muted"></i></li>
+                    <li onclick="alert('Checking shared jeep options from Dehradun...');"><i class="fas fa-share-alt"></i>Shared Jeep Services <span class="text-sm text-muted">Budget-friendly & Local</span> <i class="fas fa-chevron-right text-muted"></i></li>
+                    <li onclick="alert('Booking a local motorcycle rental...');"><i class="fas fa-motorcycle"></i>Motorcycle Rentals <span class="text-sm text-muted">For the adventurous</span> <i class="fas fa-chevron-right text-muted"></i></li>
+                </ul>
+            </div>
+            
+            <div class="glass-card service-card">
+                <h3><i class="fas fa-helicopter"></i> Heli Services</h3>
+                <p class="text-sm text-muted" style="margin-bottom: 10px;">Char Dham Pilgrimage & Emergency (Seasonal)</p>
+                <button style="width: 100%; padding: 12px; background: var(--danger); border: none; color: white; border-radius: 10px;" onclick="alert('Opening Heli Booking Portal for Kedarnath...');">Book Helicopter Service</button>
+            </div>
+            <div style="height: 50px;"></div> 
+        </div>
+    </div>
+
+    <div id="view-guides" class="view-container">
+        <div class="back-button glass" onclick="navBack()"><i class="fas fa-arrow-left"></i></div>
+        <div class="service-header">
+            <h1 style="color: var(--primary);">Guides & Services</h1>
+            <p>Connect with certified professionals for your trip. (Dummy Search)</p>
+        </div>
+        <div style="padding: 0 var(--base-padding);">
+            <div class="glass-card service-card">
+                <h3><i class="fas fa-hiking"></i> Find a Certified Trekking Guide</h3>
+                <div class="glass search-box" style="margin-bottom: 15px;">
+                    <i class="fas fa-user-circle" style="color: var(--primary);"></i>
+                    <input type="text" placeholder="Search by area or skill (e.g., Har Ki Dun, Birding)" id="guide-search-input">
+                </div>
+                <button style="width: 100%; padding: 12px; background: var(--secondary); border: none; color: white; border-radius: 10px;" onclick="searchService('guide')">Search Guides</button>
+                <ul id="guide-search-results" class="search-results-list">
+                    </ul>
+            </div>
+
+            <div class="glass-card service-card">
+                <h3><i class="fas fa-handshake"></i> Specialized Services</h3>
+                <ul>
+                    <li onclick="alert('Viewing local photography tour operators...');"><i class="fas fa-camera"></i>Photography & Filming Tours <span class="text-sm text-muted">Capture the Himalayas</span> <i class="fas fa-chevron-right text-muted"></i></li>
+                    <li onclick="alert('Viewing local tour operators...');"><i class="fas fa-globe-asia"></i>All-Inclusive Tour Operators <span class="text-sm text-muted">End-to-end planning</span> <i class="fas fa-chevron-right text-muted"></i></li>
+                    <li onclick="alert('Viewing emergency medical services...');"><i class="fas fa-first-aid"></i>Altitude & Medical Support <span class="text-sm text-muted">High altitude treks</span> <i class="fas fa-chevron-right text-muted"></i></li>
+                </ul>
+            </div>
+            
+            <div class="glass-card service-card">
+                <h3><i class="fas fa-headset"></i> Dedicated Helpline</h3>
+                <p class="text-sm text-muted" style="margin-bottom: 10px;">24/7 Uttarakhand Tourism Helpline for general queries.</p>
+                <button style="width: 100%; padding: 12px; background: var(--success); border: none; color: white; border-radius: 10px;" onclick="alert('Calling Tourism Helpline: +91 12345 67890');">Call Tourism Hotline</button>
+            </div>
+            <div style="height: 50px;"></div> 
+        </div>
+    </div>
+    
+    <div id="view-menu" class="view-container">
+        <div class="header-top menu-header">
+            <div class="flex-row">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200" class="user-avatar" style="width: 55px; height: 55px; border: 3px solid var(--primary); border-radius: 50%;">
+                <div>
+                    <h1 id="menu-user-greeting">Explorer 👋</h1>
+                    <p id="menu-user-welcome">Welcome back to the Himalayas!</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="sos-container">
+            <button class="sos-button" onclick="alert('Calling Uttarakhand Emergency Services: 108')">
+                <i class="fas fa-phone-alt"></i> EMERGENCY SOS
+            </button>
+        </div>
+        
+        <div class="menu-grid">
+            <div class="glass-card menu-stat-card"> 
+                <i class="fas fa-route" style="font-size: 1.5rem; color: var(--primary); margin-bottom: 10px;"></i>
+                <h4>8</h4> 
+                <p>Trips Completed</p> 
+            </div> 
+            <div class="glass-card menu-stat-card"> 
+                <i class="fas fa-star" style="font-size: 1.5rem; color: var(--primary); margin-bottom: 10px;"></i>
+                <h4>4.8 ⭐</h4> 
+                <p>Average Rating</p> 
+            </div>
+        </div>
+
+        <div class="menu-section-title">General</div>
+
+        <div class="menu-list">
+            <div class="glass-card menu-item" onclick="navTo('saved')">
+                <div class="menu-icon"><i class="fas fa-heart"></i></div>
+                <div style="flex-grow:1;">My Saved Destinations</div>
+                <span class="text-muted text-sm" id="saved-count">(0)</span>
+                <i class="fas fa-chevron-right text-muted"></i>
+            </div>
+            <div class="glass-card menu-item" onclick="navTo('plan')">
+                <div class="menu-icon"><i class="fas fa-route"></i></div>
+                <div style="flex-grow:1;">My Trip Plans</div>
+                <i class="fas fa-chevron-right text-muted"></i>
+            </div>
+            <div class="glass-card menu-item" onclick="window.location.href='map.html'">
+                <div class="menu-icon"><i class="fas fa-map"></i></div>
+                <div style="flex-grow:1;">Interactive Map</div>
+                <i class="fas fa-chevron-right text-muted"></i>
+            </div>
+        </div>
+        
+        <div class="menu-section-title">Account</div>
+
+        <div class="menu-list">
+             <div class="glass-card menu-item" onclick="alert('Viewing profile...');">
+                <div class="menu-icon"><i class="fas fa-user-circle"></i></div>
+                <div style="flex-grow:1;">Profile & Settings</div>
+                <i class="fas fa-chevron-right text-muted"></i>
+            </div>
+             <div class="glass-card menu-item" onclick="navTo('info')">
+                <div class="menu-icon"><i class="fas fa-info-circle"></i></div>
+                <div style="flex-grow:1;">Essential Travel Info</div>
+                <i class="fas fa-chevron-right text-muted"></i>
+            </div>
+             <div class="glass-card menu-item" onclick="alert('Viewing help...');">
+                <div class="menu-icon"><i class="fas fa-question-circle"></i></div>
+                <div style="flex-grow:1;">Help & Feedback</div>
+                <i class="fas fa-chevron-right text-muted"></i>
+            </div>
+             <div class="glass-card menu-item" onclick="alert('Viewing settings...');">
+                <div class="menu-icon"><i class="fas fa-cog"></i></div>
+                <div style="flex-grow:1;">Settings</div>
+                <i class="fas fa-chevron-right text-muted"></i>
+            </div>
+            <div class="glass-card menu-item" onclick="alert('Logging out...'); setUserInfo('Explorer'); navTo('home');">
+                <div class="menu-icon" style="color: var(--danger);"><i class="fas fa-sign-out-alt"></i></div>
+                <div style="flex-grow:1;">Logout</div>
+                <i class="fas fa-chevron-right text-muted"></i>
+            </div>
+        </div>
+
+        <div class="menu-section-title">Social & Support</div>
+
+        <div class="menu-list">
+            <div class="glass-card menu-item" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.href))">
+                <div class="menu-icon"><i class="fab fa-facebook" style="color: #1877f2;"></i></div>
+                <div style="flex-grow:1;">Share on Facebook</div>
+                <i class="fas fa-chevron-right text-muted"></i>
+            </div>
+            <div class="glass-card menu-item" onclick="window.open('https://twitter.com/intent/tweet?text=Check%20out%20this%20amazing%20Uttarakhand%20Travel%20App!&url=' + encodeURIComponent(window.location.href))">
+                <div class="menu-icon"><i class="fab fa-twitter" style="color: #1da1f2;"></i></div>
+                <div style="flex-grow:1;">Share on Twitter</div>
+                <i class="fas fa-chevron-right text-muted"></i>
+            </div>
+            <div class="glass-card menu-item" onclick="window.open('https://www.instagram.com/')">
+                <div class="menu-icon"><i class="fab fa-instagram" style="color: #e4405f;"></i></div>
+                <div style="flex-grow:1;">Share on Instagram</div>
+                <i class="fas fa-chevron-right text-muted"></i>
+            </div>
+            <div class="glass-card menu-item" onclick="window.open('https://play.google.com/store')">
+                <div class="menu-icon"><i class="fas fa-star" style="color: #ffd700;"></i></div>
+                <div style="flex-grow:1;">Rate Us on App Store</div>
+                <i class="fas fa-chevron-right text-muted"></i>
+            </div>
+            <div class="glass-card menu-item" onclick="window.open('mailto:support@uttarakhandtravel.com?subject=Support%20Request&body=Please%20describe%20your%20issue%20here.')">
+                <div class="menu-icon"><i class="fas fa-headset" style="color: var(--success);"></i></div>
+                <div style="flex-grow:1;">Contact Support</div>
+                <i class="fas fa-chevron-right text-muted"></i>
+            </div>
+        </div>
+
+        <div style="height: 50px;"></div>
+    </div>
+
+    <div id="view-saved" class="view-container">
+        <div class="header-top">
+            <h1>My Saved Places</h1>
+            <i class="fas fa-heart icon-lg" style="color: var(--danger);"></i>
+        </div>
+        <div style="padding: 0 var(--base-padding);">
+            <div id="saved-container" style="display: flex; flex-direction: column; gap: 10px;">
+            </div>
+            <div id="empty-saved-message" style="text-align: center; margin-top: 30px; display: none;">
+                <i class="far fa-heart" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 10px;"></i>
+                <h2>Nothing Saved Yet</h2>
+                <p>Tap the heart icon on a destination to save it!</p>
+            </div>
+            <div style="height: 50px;"></div>
+        </div>
+    </div>
+
+    <div id="view-info" class="view-container">
+        <div class="header-top">
+            <h1>Essential Travel Info</h1>
+            <i class="fas fa-info-circle icon-lg" style="color: var(--primary);"></i>
+        </div>
+        <div style="padding: 0 var(--base-padding);">
+            <div class="glass-card info-card">
+                <h3><i class="fas fa-clipboard-list"></i> Important Guidelines</h3>
+                <ul>
+                    <li><i class="fas fa-passport" style="color: var(--success);"></i><span class="label">Registration:</span><span class="value">Mandatory for Char Dham (Biometric)</span></li>
+                    <li><i class="fas fa-leaf" style="color: var(--success);"></i><span class="label">Ecology Fee:</span><span class="value">Applicable in certain Hill Stations</span></li>
+                    <li><i class="fas fa-flask" style="color: var(--danger);"></i><span class="label">Plastic Ban:</span><span class="value">Strictly enforced in protected areas</span></li>
+                </ul>
+            </div>
+
+            <div id="info-weather-language" class="glass-card info-card">
+                <h3><i class="fas fa-thermometer-half"></i> Weather & Seasons</h3>
+                <ul>
+                    <li><i class="fas fa-sun" style="color: var(--primary);"></i><span class="label">Summer (Apr-Jun):</span><span class="value">15°C to 30°C (Best for lower treks)</span></li>
+                    <li><i class="fas fa-cloud-showers-heavy" style="color: var(--secondary);"></i><span class="label">Monsoon (Jul-Sep):</span><span class="value">Heavy Rainfall (Avoid high altitude)</span></li>
+                    <li><i class="fas fa-snowflake" style="color: var(--text-main);"></i><span class="label">Winter (Dec-Feb):</span><span class="value">Sub-zero at altitude (Ideal for snow sports)</span></li>
+                </ul>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                    <h4 style="color: var(--secondary); font-size: 1rem; margin-bottom: 5px;">Local Languages</h4>
+                    <p class="text-sm">Hindi is the official language. Kumaoni and Garhwali are widely spoken. English is understood in tourist areas.</p>
+                </div>
+            </div>
+
+            <div class="glass-card info-card">
+                <h3><i class="fas fa-heartbeat"></i> Health & Safety</h3>
+                <ul>
+                    <li><i class="fas fa-tint" style="color: var(--danger);"></i><span class="label">Water Safety:</span><span class="value">Drink bottled water only.</span></li>
+                    <li><i class="fas fa-shield-alt" style="color: var(--success);"></i><span class="label">Trekking:</span><span class="value">Check weather forecast before starting.</span></li>
+                    <li><i class="fas fa-user-friends" style="color: var(--secondary);"></i><span class="label">Safety Tip:</span><span class="value">Avoid trekking alone after dark.</span></li>
+                </ul>
+            </div>
+            <div style="height: 50px;"></div>
+        </div>
+    </div>
+
+    <div id="view-explore" class="view-container">
+        <div class="header-top">
+            <h1>Explore Destinations</h1>
+            <div class="glass" style="width: 40px; height: 40px; border-radius: 12px; display:flex; align-items:center; justify-content:center; cursor: pointer;" onclick="toggleSort()">
+                <i class="fas fa-sort-amount-down"></i>
+            </div>
+        </div>
+        <div class="glass search-box" style="margin: 10px var(--base-padding); position: relative;">
+            <i class="fas fa-search" style="margin-right: 15px; color: var(--primary);"></i>
+            <input type="text" placeholder="Search destinations, temples, activities..." id="explore-search-input" oninput="applyFilters()">
+            <button id="clear-search" style="position: absolute; right: 15px; background: none; border: none; color: var(--text-muted); cursor: pointer; display: none;" onclick="clearSearch()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="explore-filters" style="display: flex; gap: 10px; overflow-x: auto; padding: 10px var(--base-padding); background: rgba(var(--glass-bg-base), 0.5);">
+            <button class="filter-btn active" onclick="setCategory('All')"><i class="fas fa-th-large"></i> All</button>
+            <button class="filter-btn" onclick="setCategory('Nature Attractions')"><i class="fas fa-tree"></i> Nature</button>
+            <button class="filter-btn" onclick="setCategory('Adventure Activities')"><i class="fas fa-hiking"></i> Adventure</button>
+            <button class="filter-btn" onclick="setCategory('Spiritual Sites')"><i class="fas fa-om"></i> Spiritual</button>
+            <button class="filter-btn" onclick="setCategory('Wildlife')"><i class="fas fa-paw"></i> Wildlife</button>
+            <button class="filter-btn" onclick="setCategory('Culture')"><i class="fas fa-music"></i> Culture</button>
+            <button class="filter-btn" onclick="setCategory('Heritage')"><i class="fas fa-monument"></i> Heritage</button>
+            <button class="filter-btn" onclick="setCategory('Government Offices')"><i class="fas fa-building"></i> Offices</button>
+        </div>
+        <div class="explore-list-container" id="explore-list" style="padding: 0 var(--base-padding); display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; max-height: 500px; overflow-y: auto;">
+        </div>
+    </div>
+
+    <div id="view-detail" class="view-container">
+        <div class="glass" style="position: fixed; top: 20px; left: 20px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 30; cursor: pointer;" onclick="navBack()">
+            <i class="fas fa-arrow-left"></i>
+        </div>
+        <img src="" class="hero-image-detail" id="detail-img" style="width: 100%; height: 35vh; object-fit: cover;">
+        <div class="detail-info-card" id="detail-info-card" style="padding: var(--base-padding); margin-top: -30px; border-radius: 30px 30px 0 0; background: var(--bg-dark); position: relative; z-index: 25; padding-bottom: 80px;">
+        </div>
+    </div>
+
+    <div id="view-plan" class="view-container">
+        <div class="header-top">
+            <h1>My Travel Plan</h1>
+            <button style="background:var(--primary); border:none; color:white; padding:8px 16px; border-radius:20px; font-size:0.8rem; font-weight: 600; cursor: pointer;">New Plan</button>
+        </div>
+        <div style="padding: 0 var(--base-padding);">
+            <div class="personal-map-card glass-card" style="padding: 20px; text-align: center; margin-bottom: 25px;" onclick="alert('Opening Personal Trip Map Visualization...');">
+                <i class="fas fa-route icon-lg" style="font-size: 3rem; color: var(--secondary); margin-bottom: 10px;"></i>
+                <h2>Plan Your Next Trip</h2>
+                <p>Create custom itineraries and visualize your route on a map.</p>
+            </div>
+            
+            <h3 style="margin-bottom: 15px;">Recent Plans</h3>
+            
+            <div class="glass-card info-card" style="margin-bottom: 10px;">
+                <div style="display:flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="color: var(--primary); margin-bottom: 5px; font-size: 1.1rem;">Char Dham Yatra</h4>
+                        <p class="text-sm">Kedarnath, Badrinath, Gangotri, Yamunotri</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-muted"></i>
+                </div>
+            </div>
+            
+            <div class="glass-card info-card" style="margin-bottom: 10px;">
+                <div style="display:flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="color: var(--primary); margin-bottom: 5px; font-size: 1.1rem;">Nainital & Kumaon Hills</h4>
+                        <p class="text-sm">Nainital, Mukteshwar, Almora</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-muted"></i>
+                </div>
+            </div>
+            
+            <div style="height: 50px;"></div>
+        </div>
+    </div>
+
+        <div id="map" style="height: 70vh; width: 100%; border-radius: 20px; margin: 20px 0;"></div>
+
+        <div style="padding: 0 var(--base-padding);">
+            <div class="glass-card" style="padding: 20px; text-align: center; margin-bottom: 25px;">
+                <i class="fas fa-map-marked-alt icon-lg" style="font-size: 4rem; color: var(--secondary); margin-bottom: 15px;"></i>
+                <h2>Explore Uttarakhand on Map</h2>
+                <p>Interactive map showing all destinations, routes, and points of interest across Uttarakhand.</p>
+                <button style="background: var(--primary); border: none; color: white; padding: 12px 24px; border-radius: 25px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 15px;" onclick="alert('Opening full-screen interactive map...');">Open Map</button>
+            </div>
+            
+            <h3 style="margin-bottom: 15px;">Popular Routes</h3>
+            
+            <div class="glass-card info-card" style="margin-bottom: 10px;">
+                <div style="display:flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="color: var(--primary); margin-bottom: 5px; font-size: 1.1rem;">Char Dham Circuit</h4>
+                        <p class="text-sm">Yamunotri - Gangotri - Kedarnath - Badrinath</p>
+                    </div>
+                    <i class="fas fa-route text-muted"></i>
+                </div>
+            </div>
+            
+            <div class="glass-card info-card" style="margin-bottom: 10px;">
+                <div style="display:flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="color: var(--primary); margin-bottom: 5px; font-size: 1.1rem;">Kumaon Valley Tour</h4>
+                        <p class="text-sm">Nainital - Almora - Ranikhet - Mukteshwar</p>
+                    </div>
+                    <i class="fas fa-route text-muted"></i>
+                </div>
+            </div>
+            
+            <div style="height: 50px;"></div>
+        </div>
+    </div>
+
+    <div class="glass nav-bar" id="app-nav">
+        <div class="nav-btn active" onclick="navTo('home')">
+            <i class="fas fa-mountain"></i>
+            <span>Home</span>
+        </div>
+        <div class="nav-btn" onclick="navTo('explore')">
+            <i class="fas fa-compass"></i>
+            <span>Explore</span>
+        </div>
+        <div class="nav-btn" onclick="window.location.href='map.html'">
+            <i class="fas fa-map"></i>
+            <span>Map</span>
+        </div>
+        <div class="nav-btn" onclick="navTo('plan')">
+            <i class="fas fa-route"></i>
+            <span>Plan</span>
+        </div>
+        <div class="nav-btn" onclick="navTo('menu')">
+            <i class="fas fa-bars"></i>
+            <span>Menu</span>
+        </div>
+    </div>
+
+
+    <script>
+        
+        <!-- let currentPopularCount = 12; -->
+        let currentView = 'home'; // Start on the home view
+        let savedPlaces = JSON.parse(localStorage.getItem('savedPlaces')) || [];
+        let slideshowInterval = null;
+        let userName = "Explorer";
+
+        // --- AUTHENTICATION LOGIC ---
+        function toggleAuth(formType) {
+            const loginForm = document.getElementById('login-form');
+            const signupForm = document.getElementById('signup-form');
+            if (formType === 'signup') {
+                loginForm.classList.add('hidden-form');
+                signupForm.classList.remove('hidden-form');
+            } else {
+                loginForm.classList.remove('hidden-form');
+                signupForm.classList.add('hidden-form');
+            }
+        }
+
+        function authSuccess(name) {
+            // Placeholder for real login/signup
+            userName = name;
+            localStorage.setItem('userName', name);
+            // Simulate successful login/signup and navigate to home
+            setUserInfo(name);
+            navTo('home');
+            alert(`Logged in successfully as ${name}!`);
+        }
+
+        function signInAsGuest() {
+            userName = "Guest";
+            localStorage.setItem('userName', 'Guest');
+            setUserInfo("Guest");
+            navTo('home');
+            alert('Signed in as Guest. Some features may be limited.');
+        }
+
+        function setUserInfo(name) {
+            document.getElementById('user-greeting').innerText = `${name} 👋`;
+            const menuWelcome = (name === 'Guest') ? "Explore as a Guest." : "Welcome back to the Himalayas!";
+            document.getElementById('menu-user-greeting').innerText = `${name} 👋`;
+            document.getElementById('menu-user-welcome').innerText = menuWelcome;
+        }
+
+        // ==================== NAVIGATION ====================
+        function navTo(viewId) {
+            const newView = document.getElementById(`view-${viewId}`);
+            if (!newView) return;
+
+            // Deactivate current view
+            const currentActiveView = document.querySelector('.view-container.active');
+            if (currentActiveView) {
+                currentActiveView.classList.remove('active');
+            }
+
+            // Activate new view
+            newView.classList.add('active');
+            currentView = viewId;
+
+            // Handle Nav Bar Active State
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            if (['home', 'explore', 'map', 'plan', 'menu'].includes(viewId)) {
+                const activeNavBtn = document.querySelector(`#app-nav .nav-btn[onclick*="navTo('${viewId}')"]`);
+                if (activeNavBtn) {
+                    activeNavBtn.classList.add('active');
+                }
+            }
+
+            // Re-render Saved list or check for Home sections on navigate
+            if (viewId === 'saved') {
+                renderSavedPlaces();
+            }
+            if (viewId === 'home') {
+                 // Ensure home sections are rendered
+                renderHomeSections();
+            }
+        }
+
+        function navBack() {
+            // Simplified back function for sub-views, always returns to the main screen
+            navTo('home');
+        }
+
+        // ==================== UTILITIES ====================
+        function updateGreeting() {
+            const hour = new Date().getHours();
+            let greeting = "Good Evening";
+            if (hour < 12) greeting = "Good Morning";
+            else if (hour < 18) greeting = "Good Afternoon";
+            // Mock weather
+            let weather = "Sunny 22°C";
+            if (hour < 6 || hour > 20) weather = "Clear 15°C";
+            else if (hour < 12) weather = "Sunny 20°C";
+            else if (hour < 18) weather = "Sunny 25°C";
+            document.getElementById('dynamic-greeting-time').innerText = `${greeting}, ${weather}`;
+        }
+        
+        // ==================== DATA GENERATORS ====================
+        function getRandomRating() {
+            return (Math.random() * (5.0 - 4.0) + 4.0).toFixed(1);
+        }
+        function getRandomPrice() {
+            return Math.floor(Math.random() * (15000 - 3000) + 3000);
+        }
+        function getRandomDuration() {
+            const hours = Math.floor(Math.random() * (12 - 4) + 4);
+            const minutes = Math.floor(Math.random() * 60);
+            return `${hours}h ${minutes}m`;
+        }
+        function getRandomTime() {
+            const hour = Math.floor(Math.random() * 24);
+            const minute = Math.floor(Math.random() * 60);
+            const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+            return timeStr;
+        }
+
+
+        // ==================== SLIDESHOW ====================
+        const slideshowImages = [
+            "https://cdn.pixabay.com/photo/2018/12/28/09/49/himalaya-3899187_1280.jpg",
+            "https://cdn.pixabay.com/photo/2022/06/05/05/59/mussoorie-7243347_1280.jpg",
+            "https://cdn.pixabay.com/photo/2020/01/22/12/11/rishikesh-4785189_1280.jpg",
+            "https://cdn.pixabay.com/photo/2022/09/14/15/27/scenery-7454623_1280.jpg",
+            "https://cdn.pixabay.com/photo/2020/08/16/07/59/uttarakhand-5492099_1280.jpg",
+            "https://cdn.pixabay.com/photo/2022/10/05/07/11/temple-7499927_1280.jpg",
+            "https://cdn.pixabay.com/photo/2019/08/19/16/19/hills-4416870_1280.jpg",
+            "https://cdn.pixabay.com/photo/2019/07/12/17/16/background-4333236_1280.jpg",
+            "https://cdn.pixabay.com/photo/2023/04/03/04/39/river-7895935_1280.jpg",
+            "https://cdn.pixabay.com/photo/2020/12/03/15/17/mayali-pass-5800786_1280.jpg",
+            "https://cdn.pixabay.com/photo/2021/01/02/23/33/river-5883255_1280.jpg"
+        ];
+
+        const slideshowTitles = [
+            "Majestic Himalayas",
+            "Serene Mussoorie",
+            "Spiritual Rishikesh",
+            "Breathtaking Valley Views",
+            "Uttarakhand Wilderness",
+            "Sacred Temples",
+            "Rolling Hills",
+            "Mountain Landscapes",
+            "Tranquil Rivers",
+            "Alpine Passes",
+            "River Adventures"
+        ];
+
+        function renderSlideshow() {
+            const slideshowInner = document.getElementById('slideshow-inner');
+            slideshowInner.innerHTML = slideshowImages.map((imgUrl, index) =>
+                `<div class="slide ${index === 0 ? 'active' : ''}"><img src="${imgUrl}" alt="Uttarakhand Scenery"><div class="slide-caption">${slideshowTitles[index]}</div></div>`
+            ).join('');
+
+            const dotsContainer = document.getElementById('slideshow-dots');
+            dotsContainer.innerHTML = slideshowImages.map((_, index) =>
+                `<div class="dot ${index === 0 ? 'active' : ''}" onclick="goToSlide(${index})"></div>`
+            ).join('');
+
+            if (slideshowInterval) {
+                clearInterval(slideshowInterval);
+            }
+            let slideIndex = 0;
+            const slides = document.querySelectorAll('#slideshow-inner .slide');
+            if (!slides || slides.length === 0) return;
+
+            const updateSlides = () => {
+                goToSlide(slideIndex);
+                slideIndex = (slideIndex + 1) % slides.length;
+            };
+
+            slideshowInterval = setInterval(updateSlides, 6000);
+
+            // Pause on hover
+            const slideshowWrapper = document.querySelector('.slideshow-wrapper');
+            slideshowWrapper.addEventListener('mouseenter', () => clearInterval(slideshowInterval));
+            slideshowWrapper.addEventListener('mouseleave', () => {
+                slideshowInterval = setInterval(updateSlides, 6000);
+            });
+        }
+
+        function goToSlide(index) {
+            const slides = document.querySelectorAll('#slideshow-inner .slide');
+            const dots = document.querySelectorAll('.dot');
+            slides.forEach(s => s.classList.remove('active'));
+            dots.forEach(d => d.classList.remove('active'));
+            slides[index].classList.add('active');
+            dots[index].classList.add('active');
+        }
+
+        // Featured Slideshow
+        function initFeaturedSlideshow() {
+            let featuredIndex = 0;
+            const featuredSlides = document.querySelectorAll('.featured-slide');
+            if (!featuredSlides || featuredSlides.length === 0) return;
+
+            const updateFeaturedSlides = () => {
+                featuredSlides.forEach(s => s.classList.remove('active'));
+                featuredSlides[featuredIndex].classList.add('active');
+                featuredIndex = (featuredIndex + 1) % featuredSlides.length;
+            };
+
+            setInterval(updateFeaturedSlides, 5000); // Change every 5 seconds
+        }
+
+        // ==================== DATA ====================
+        const places = [
+            { id: 1, name: "Rishikesh (Yoga Capital)", type: "Spiritual/Adventure", category: "Pilgrimage", img: "https://images.unsplash.com/photo-1594967399238-d6934c264ce4?q=80&w=400", rating: 4.6, description: "Known for its ashrams, yoga centers, and Ganga aarti, Rishikesh is also the gateway to the Himalayas for adventure sports like rafting.", timing: "All Year", cost: "3,000 INR", icon: "fas fa-water-ladder", isTrending: true, isSafari: false },
+            { id: 2, name: "Auli (Ski Resort)", type: "Adventure/Nature", category: "Trekking", img: "https://images.unsplash.com/photo-1596700810756-3b1236592231?q=80&w=400", rating: 4.5, description: "A popular skiing destination offering panoramic views of Nanda Devi. Ideal for snow lovers and trekking in summer.", timing: "Dec - Mar (Ski) | May - Oct (Trek)", cost: "5,000 INR", icon: "fas fa-mountain", isTrending: true, isSafari: false },
+            { id: 3, name: "Jim Corbett Park", type: "Wildlife Safari", category: "Safari", img: "https://images.unsplash.com/photo-1582260667954-4d872b22533c?q=80&w=400", rating: 4.7, description: "India's oldest national park, home to the Bengal tiger, elephants, and hundreds of bird species. Jeep safaris are a must.", timing: "Nov - Jun", cost: "6,000 INR", icon: "fas fa-paw", isTrending: true, isSafari: true },
+            { id: 4, name: "Valley of Flowers", type: "Trekking/Nature", category: "Trekking", img: "https://images.unsplash.com/photo-1593988775440-205a2d0a071d?q=80&w=400", rating: 4.9, description: "A UNESCO World Heritage Site famous for its endemic alpine flowers and diverse fauna. A trekker's paradise.", timing: "Jul - Sep", cost: "9,000 INR", icon: "fas fa-spa", isTrending: true, isSafari: false },
+            { id: 5, name: "Badrinath Temple", type: "Char Dham Pilgrimage", category: "Pilgrimage", img: "https://images.unsplash.com/photo-1628178652425-c663e6f96614?q=80&w=400", rating: 4.8, description: "One of the Char Dham pilgrimage sites, dedicated to Lord Vishnu. Located between the Nar and Narayan mountain peaks.", timing: "May - Oct", cost: "7,000 INR", icon: "fas fa-om", isTrending: true, isSafari: false },
+            { id: 6, name: "Nainital (Lake District)", type: "Nature/Hill Station", category: "Trekking", img: "https://images.unsplash.com/photo-1588691888915-d72b2605e714?q=80&w=400", rating: 4.4, description: "Famous for the pear-shaped Naini Lake and its surrounding viewpoints. A perfect weekend getaway.", timing: "All Year (Avoid Monsoon)", cost: "4,000 INR", icon: "fas fa-water", isTrending: true, isSafari: false },
+            { id: 7, name: "Haridwar (Ganga Aarti)", type: "Spiritual", category: "Pilgrimage", img: "https://images.unsplash.com/photo-1563820986503-4556461a8f60?q=80&w=400", rating: 4.6, description: "The holy city where the Ganga river leaves the mountains. Famous for the evening Ganga Aarti at Har Ki Pauri.", timing: "All Year", cost: "2,500 INR", icon: "fas fa-fire", isTrending: true, isSafari: false },
+            { id: 8, name: "Rajaji National Park", type: "Wildlife Safari", category: "Safari", img: "https://images.unsplash.com/photo-1549444158-75f1b672721a?q=80&w=400", rating: 4.3, description: "Spread over three districts, Rajaji is a haven for elephants and has a diverse range of flora and fauna. Less crowded than Corbett.", timing: "Nov - Jun", cost: "4,500 INR", icon: "fas fa-paw", isTrending: false, isSafari: true },
+            // Nature Attractions
+            { id: 9, name: "Naini Lake", type: "Lake/Nature", category: "Nature Attractions", img: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=400", rating: 4.5, description: "A picturesque lake in Nainital, surrounded by hills and offering boating and scenic views.", timing: "All Year", cost: "2,000 INR", icon: "fas fa-water", isTrending: false, isSafari: false },
+            { id: 10, name: "Bhimtal Lake", type: "Lake/Nature", category: "Nature Attractions", img: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=400", rating: 4.4, description: "Known for its serene waters and the island with a small temple.", timing: "All Year", cost: "1,500 INR", icon: "fas fa-water", isTrending: false, isSafari: false },
+            { id: 11, name: "Sattal Lakes", type: "Lakes/Nature", category: "Nature Attractions", img: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=400", rating: 4.6, description: "A cluster of seven freshwater lakes, ideal for nature walks and bird watching.", timing: "All Year", cost: "2,500 INR", icon: "fas fa-water", isTrending: false, isSafari: false },
+            { id: 12, name: "Naukuchiatal", type: "Lake/Nature", category: "Nature Attractions", img: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=400", rating: 4.3, description: "A heart-shaped lake offering panoramic views of the Himalayas.", timing: "All Year", cost: "2,000 INR", icon: "fas fa-water", isTrending: false, isSafari: false },
+            { id: 13, name: "Kedartal", type: "Lake/Nature", category: "Nature Attractions", img: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=400", rating: 4.7, description: "A glacial lake near Kedarnath, surrounded by snow-capped peaks.", timing: "May - Oct", cost: "5,000 INR", icon: "fas fa-water", isTrending: false, isSafari: false },
+            // Adventure Activities
+            { id: 14, name: "River Rafting in Rishikesh", type: "Adventure/Water", category: "Adventure Activities", img: "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=400", rating: 4.7, description: "Thrilling white-water rafting on the Ganges River.", timing: "Apr - Oct", cost: "3,000 INR", icon: "fas fa-water", isTrending: true, isSafari: false },
+            { id: 15, name: "Trek to Valley of Flowers", type: "Adventure/Trekking", category: "Adventure Activities", img: "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=400", rating: 4.9, description: "A challenging trek through alpine meadows and flowers.", timing: "Jul - Sep", cost: "8,000 INR", icon: "fas fa-hiking", isTrending: true, isSafari: false },
+            { id: 16, name: "Skiing in Auli", type: "Adventure/Winter", category: "Adventure Activities", img: "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=400", rating: 4.5, description: "Skiing on the slopes with stunning mountain views.", timing: "Dec - Mar", cost: "5,000 INR", icon: "fas fa-skiing", isTrending: false, isSafari: false },
+            { id: 17, name: "Paragliding in Mukteshwar", type: "Adventure/Air", category: "Adventure Activities", img: "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=400", rating: 4.6, description: "Soar above the clouds with panoramic views.", timing: "Oct - May", cost: "4,000 INR", icon: "fas fa-plane", isTrending: false, isSafari: false },
+            { id: 18, name: "Zip Lining in Mussoorie", type: "Adventure/Thrill", category: "Adventure Activities", img: "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=400", rating: 4.4, description: "Fly through the air on a zip line course.", timing: "All Year", cost: "1,500 INR", icon: "fas fa-wind", isTrending: false, isSafari: false },
+            // Spiritual Sites
+            { id: 19, name: "Kedarnath Temple", type: "Spiritual/Temple", category: "Spiritual Sites", img: "https://images.unsplash.com/photo-1582515073490-39981397c445?q=80&w=400", rating: 4.8, description: "Ancient temple dedicated to Lord Shiva, one of the Char Dham.", timing: "May - Oct", cost: "7,000 INR", icon: "fas fa-om", isTrending: true, isSafari: false },
+            { id: 20, name: "Badrinath Temple", type: "Spiritual/Temple", category: "Spiritual Sites", img: "https://images.unsplash.com/photo-1582515073490-39981397c445?q=80&w=400", rating: 4.8, description: "Sacred temple of Lord Vishnu in the Himalayas.", timing: "May - Oct", cost: "7,000 INR", icon: "fas fa-om", isTrending: true, isSafari: false },
+            { id: 21, name: "Gangotri Temple", type: "Spiritual/Temple", category: "Spiritual Sites", img: "https://images.unsplash.com/photo-1582515073490-39981397c445?q=80&w=400", rating: 4.7, description: "Temple at the source of the Ganges River.", timing: "May - Oct", cost: "6,000 INR", icon: "fas fa-om", isTrending: true, isSafari: false },
+            { id: 22, name: "Yamunotri Temple", type: "Spiritual/Temple", category: "Spiritual Sites", img: "https://images.unsplash.com/photo-1582515073490-39981397c445?q=80&w=400", rating: 4.7, description: "Temple at the source of the Yamuna River.", timing: "May - Oct", cost: "6,000 INR", icon: "fas fa-om", isTrending: true, isSafari: false },
+            { id: 23, name: "Hemkund Sahib", type: "Spiritual/Gurdwara", category: "Spiritual Sites", img: "https://images.unsplash.com/photo-1582515073490-39981397c445?q=80&w=400", rating: 4.9, description: "Sikh gurdwara and the last resting place of Guru Gobind Singh.", timing: "May - Oct", cost: "8,000 INR", icon: "fas fa-om", isTrending: true, isSafari: false },
+            // Wildlife
+            { id: 24, name: "Jim Corbett National Park", type: "Wildlife/Park", category: "Wildlife", img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=400", rating: 4.7, description: "Home to Bengal tigers and diverse wildlife.", timing: "Nov - Jun", cost: "6,000 INR", icon: "fas fa-paw", isTrending: false, isSafari: true },
+            { id: 25, name: "Rajaji National Park", type: "Wildlife/Park", category: "Wildlife", img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=400", rating: 4.3, description: "Elephant reserve with rich biodiversity.", timing: "Nov - Jun", cost: "4,500 INR", icon: "fas fa-paw", isTrending: false, isSafari: true },
+            { id: 26, name: "Nanda Devi National Park", type: "Wildlife/Park", category: "Wildlife", img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=400", rating: 4.8, description: "UNESCO site with unique flora and fauna.", timing: "May - Oct", cost: "7,000 INR", icon: "fas fa-paw", isTrending: false, isSafari: false },
+            { id: 27, name: "Valley of Flowers National Park", type: "Wildlife/Park", category: "Wildlife", img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=400", rating: 4.9, description: "Alpine flowers and rare wildlife.", timing: "Jul - Sep", cost: "9,000 INR", icon: "fas fa-paw", isTrending: true, isSafari: false },
+            { id: 28, name: "Gangotri National Park", type: "Wildlife/Park", category: "Wildlife", img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=400", rating: 4.6, description: "Protects the upper catchment of the Ganges.", timing: "May - Oct", cost: "5,000 INR", icon: "fas fa-paw", isTrending: false, isSafari: false },
+            // Culture
+            { id: 29, name: "Kumaoni Folk Music", type: "Culture/Music", category: "Culture", img: "https://images.unsplash.com/photo-1513415277634-6fda6b25210c?q=80&w=400", rating: 4.5, description: "Traditional music and dance of Kumaon region.", timing: "All Year", cost: "1,000 INR", icon: "fas fa-music", isTrending: false, isSafari: false },
+            { id: 30, name: "Garhwali Dance", type: "Culture/Dance", category: "Culture", img: "https://images.unsplash.com/photo-1513415277634-6fda6b25210c?q=80&w=400", rating: 4.4, description: "Folk dances showcasing Garhwali traditions.", timing: "All Year", cost: "1,500 INR", icon: "fas fa-music", isTrending: false, isSafari: false },
+            { id: 31, name: "Uttarakhand Cuisine", type: "Culture/Food", category: "Culture", img: "https://images.unsplash.com/photo-1513415277634-6fda6b25210c?q=80&w=400", rating: 4.6, description: "Local dishes like bhang ki chutney and chainsoo.", timing: "All Year", cost: "500 INR", icon: "fas fa-utensils", isTrending: false, isSafari: false },
+            { id: 32, name: "Harela Festival", type: "Culture/Festival", category: "Culture", img: "https://images.unsplash.com/photo-1513415277634-6fda6b25210c?q=80&w=400", rating: 4.7, description: "Festival celebrating the arrival of monsoon.", timing: "July", cost: "Free", icon: "fas fa-leaf", isTrending: false, isSafari: false },
+            { id: 33, name: "International Yoga Festival", type: "Culture/Yoga", category: "Culture", img: "https://images.unsplash.com/photo-1513415277634-6fda6b25210c?q=80&w=400", rating: 4.8, description: "Yoga event in Rishikesh attracting global participants.", timing: "March", cost: "2,000 INR", icon: "fas fa-om", isTrending: true, isSafari: false },
+            // Heritage
+            { id: 34, name: "Jageshwar Temples", type: "Heritage/Temples", category: "Heritage", img: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?q=80&w=400", rating: 4.6, description: "Ancient cluster of temples from 9th-12th century.", timing: "All Year", cost: "2,500 INR", icon: "fas fa-monument", isTrending: false, isSafari: false },
+            { id: 35, name: "Baijnath Temple", type: "Heritage/Temple", category: "Heritage", img: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?q=80&w=400", rating: 4.5, description: "12th-century temple with intricate carvings.", timing: "All Year", cost: "1,000 INR", icon: "fas fa-monument", isTrending: false, isSafari: false },
+            { id: 36, name: "Chandpur Gadhi", type: "Heritage/Fort", category: "Heritage", img: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?q=80&w=400", rating: 4.4, description: "Historical fort with panoramic views.", timing: "All Year", cost: "500 INR", icon: "fas fa-monument", isTrending: false, isSafari: false },
+            { id: 37, name: "Almora Fort", type: "Heritage/Fort", category: "Heritage", img: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?q=80&w=400", rating: 4.3, description: "Old fort offering insights into history.", timing: "All Year", cost: "300 INR", icon: "fas fa-monument", isTrending: false, isSafari: false },
+            { id: 38, name: "Ramgarh Fort", type: "Heritage/Fort", category: "Heritage", img: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?q=80&w=400", rating: 4.2, description: "Ruins of a fort with historical significance.", timing: "All Year", cost: "400 INR", icon: "fas fa-monument", isTrending: false, isSafari: false },
+            // Government Offices
+            { id: 39, name: "Uttarakhand Tourism Office Dehradun", type: "Government/Office", category: "Government Offices", img: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=400", rating: 4.0, description: "Main tourism office for information and bookings.", timing: "All Year", cost: "Free", icon: "fas fa-building", isTrending: false, isSafari: false },
+            { id: 40, name: "Haridwar Tourism Office", type: "Government/Office", category: "Government Offices", img: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=400", rating: 4.0, description: "Local office for Haridwar tourism details.", timing: "All Year", cost: "Free", icon: "fas fa-building", isTrending: false, isSafari: false },
+            { id: 41, name: "Rishikesh Tourism Office", type: "Government/Office", category: "Government Offices", img: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=400", rating: 4.0, description: "Office for adventure and spiritual tourism.", timing: "All Year", cost: "Free", icon: "fas fa-building", isTrending: false, isSafari: false },
+            { id: 42, name: "Nainital Tourism Office", type: "Government/Office", category: "Government Offices", img: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=400", rating: 4.0, description: "Information center for Nainital and nearby areas.", timing: "All Year", cost: "Free", icon: "fas fa-building", isTrending: false, isSafari: false },
+            { id: 43, name: "Almora Tourism Office", type: "Government/Office", category: "Government Offices", img: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=400", rating: 4.0, description: "Local office for Kumaon region tourism.", timing: "All Year", cost: "Free", icon: "fas fa-building", isTrending: false, isSafari: false },
+        ];
+
+        const funFacts = [
+            "Uttarakhand is home to the source of two major rivers - the Ganges and the Yamuna.",
+            "The state has 13 national parks and wildlife sanctuaries, protecting diverse wildlife.",
+            "Uttarakhand is known as the 'Land of Gods' with over 1000 temples and shrines.",
+            "Auli in Uttarakhand is one of the best skiing destinations in India.",
+            "The Valley of Flowers is a UNESCO World Heritage Site with over 500 species of flowers.",
+            "Rishikesh is called the 'Yoga Capital of the World' and hosts international yoga festivals.",
+            "Uttarakhand has the highest percentage of forest cover in India at about 45%.",
+            "The state is home to the endangered Bengal tiger and Asiatic black bear."
+        ];
+
+        function showRandomFact() {
+            const factElement = document.getElementById('fun-fact');
+            const randomFact = funFacts[Math.floor(Math.random() * funFacts.length)];
+            factElement.textContent = randomFact;
+        }
+
+        const events = [
+            { name: "Ganga Aarti", location: "Haridwar/Rishikesh", date: "Daily, Sunset", icon: "fas fa-fire" },
+            { name: "Kumbh Mela (Next)", location: "Haridwar", date: "Year 2027", icon: "fas fa-users" },
+            { name: "Nanda Devi Raj Jat", location: "Kumaon", date: "Every 12 Years", icon: "fas fa-mountain" },
+            { name: "Vasant Utsav", location: "Dehradun", date: "February", icon: "fas fa-leaf" },
+        ];
+
+
+        // --- DUMMY SEARCH LOGIC ---
+
+        function showRecommendations() {
+            document.getElementById('search-recommendations').style.display = 'block';
+            filterRecommendations(document.getElementById('home-search-input').value);
+        }
+
+        function hideRecommendations() {
+            setTimeout(() => {
+                document.getElementById('search-recommendations').style.display = 'none';
+            }, 200); // Delay to allow click event on recommendation
+        }
+
+        function filterRecommendations(query) {
+            const recsDiv = document.getElementById('search-recommendations');
+            const lowerQuery = query.toLowerCase();
+
+            if (!query || query.length < 2) {
+                recsDiv.innerHTML = `<p class="text-sm text-muted">Start typing to see popular destinations (e.g., Temple, Safari, Auli)...</p>`;
+                return;
+            }
+
+            const filteredPlaces = places.filter(place =>
+                place.name.toLowerCase().includes(lowerQuery) ||
+                place.category.toLowerCase().includes(lowerQuery) ||
+                place.type.toLowerCase().includes(lowerQuery)
+            ).slice(0, 5);
+
+            if (filteredPlaces.length === 0) {
+                recsDiv.innerHTML = `<p class="text-sm text-muted">No results found for "${query}"</p>`;
+                return;
+            }
+
+            recsDiv.innerHTML = `<p class="text-sm" style="color: var(--primary); margin-bottom: 8px;">Results for "${query}":</p>`;
+            filteredPlaces.forEach(place => {
+                const result = document.createElement('div');
+                result.className = 'text-sm glass-card';
+                result.style.padding = '10px';
+                result.style.marginBottom = '5px';
+                result.style.cursor = 'pointer';
+                result.innerText = `${place.name} (${place.category})`;
+                result.onclick = (e) => {
+                    e.stopPropagation();
+                    showDetail(place.id);
+                    document.getElementById('home-search-input').value = place.name;
+                    hideRecommendations();
+                };
+                recsDiv.appendChild(result);
+            });
+        }
+
+
+        function searchService(serviceType) {
+            let query = '';
+            let resultsContainer;
+            let results = [];
+
+            switch (serviceType) {
+                case 'hotel':
+                    query = document.getElementById('hotel-search-input').value;
+                    resultsContainer = document.getElementById('hotel-search-results');
+                    if (!query.trim()) { alert('Please enter search terms for hotels.'); return; }
+                    // Dummy Hotel Results
+                    const location = query.split(',')[0].trim() || 'Rishikesh';
+                    for (let i = 0; i < 4; i++) {
+                        const hotelName = ['The Himalayan View', 'Ganga Retreat Hotel', 'Forest Bliss Resort', 'Ashram Homestay'][i];
+                        const rating = getRandomRating();
+                        const price = getRandomPrice();
+                        results.push({ name: hotelName, location: location, rating: rating, price: price, details: `Free Breakfast | WiFi | Pets Allowed`, icon: 'fas fa-bed' });
+                    }
+                    break;
+                case 'transport':
+                    query = document.getElementById('transport-search-input').value;
+                    resultsContainer = document.getElementById('transport-search-results');
+                    if (!query.includes('-')) { alert('Please enter Source and Destination separated by a hyphen (-).'); return; }
+                    // Dummy Transport Results
+                    const [source, destination] = query.split('-').map(s => s.trim());
+                    if (source && destination) {
+                        for (let i = 0; i < 4; i++) {
+                            const duration = getRandomDuration();
+                            const time = getRandomTime();
+                            const price = getRandomPrice();
+                            const vehicle = ['AC Bus', 'Volvo Sleeper', 'Local Taxi', 'Shared Jeep'][i];
+                            results.push({ name: `${source} to ${destination}`, location: vehicle, price: price, details: `${duration} | Departs ${time}`, icon: 'fas fa-location-arrow' });
+                        }
+                    } else { alert('Please enter Source and Destination separated by a hyphen (-).'); return; }
+                    break;
+                case 'guide':
+                    query = document.getElementById('guide-search-input').value;
+                    resultsContainer = document.getElementById('guide-search-results');
+                    if (!query.trim()) { alert('Please enter search terms for guides.'); return; }
+                    // Dummy Guide Results
+                    const area = query.split(',')[0].trim() || 'Valley of Flowers';
+                    for (let i = 0; i < 4; i++) {
+                        const guideName = ['Aarav Singh (Trekking)', 'Pooja Devi (Pilgrimage)', 'Rajesh Pant (Wildlife)', 'Geeta Rawat (Culture)'][i];
+                        const rating = getRandomRating();
+                        results.push({ name: guideName, area: area, rating: rating, experience: `${Math.floor(Math.random() * 10) + 2} Years Experience`, icon: 'fas fa-user-check' });
+                    }
+                    break;
+            }
+
+            resultsContainer.innerHTML = '';
+            // Render Results
+            results.forEach(item => {
+                const li = document.createElement('li');
+                li.onclick = () => alert(`Viewing details for: ${item.name}`);
+                let detailHtml = '';
+                let priceHtml = '';
+
+                if (serviceType === 'hotel') {
+                    detailHtml = `<div class="result-details"><span class="rating">⭐ ${item.rating}</span> <span><i class="fas fa-map-marker-alt"></i> ${item.location}</span> <span>${item.details}</span></div>`;
+                    priceHtml = `<span style="color: var(--success); font-weight: 700;">₹${item.price.toLocaleString()}</span>`;
+                } else if (serviceType === 'transport') {
+                    detailHtml = `<div class="result-details"><span>${item.details.split('|')[0].trim()}</span> <span>${item.details.split('|')[1].trim()}</span></div>`;
+                    priceHtml = `<span style="color: var(--success); font-weight: 700;">₹${item.price.toLocaleString()}</span>`;
+                } else if (serviceType === 'guide') {
+                    detailHtml = `<div class="result-details"><span class="rating">⭐ ${item.rating}</span> <span><i class="fas fa-map-marked-alt"></i> ${item.area}</span> <span>${item.experience}</span></div>`;
+                    priceHtml = `<span style="color: var(--primary); font-weight: 700;">Contact</span>`;
+                }
+
+                li.innerHTML = `
+                    <div class="result-header">
+                        <div style="display:flex; align-items: center;">
+                            <i class="${item.icon}" style="color: var(--secondary); margin-right: 10px;"></i>
+                            <h4 style="font-size: 1rem; color: var(--text-main); font-weight: 600;">${item.name}</h4>
+                        </div>
+                        ${priceHtml}
+                    </div>
+                    ${detailHtml}
+                `;
+                resultsContainer.appendChild(li);
+            });
+
+            if (results.length > 0) {
+                alert(`Found ${results.length} results for your search!`);
+            } else {
+                 resultsContainer.innerHTML = `<p class="text-sm text-muted" style="padding: 10px;">No results found.</p>`;
+            }
+        }
+
+
+        // --- HOME VIEW RENDERING ---
+
+        function exploreRandom() {
+            if (!places || places.length === 0) return;
+            const randomIndex = Math.floor(Math.random() * places.length);
+            const randomPlace = places[randomIndex];
+            showDetail(randomPlace.id);
+        }
+
+        function createPlaceCard(place, isSafari, isTrending) {
+            const card = document.createElement('div');
+            card.className = isSafari ? 'glass-card safari-card' : 'glass-card trending-card';
+            card.style.background = `linear-gradient(135deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('${place.img}')`;
+            card.style.backgroundSize = 'cover';
+            card.style.backgroundPosition = 'center';
+            card.onclick = () => showDetail(place.id);
+            card.innerHTML = `
+                <div class="${isSafari ? 'safari-info' : 'trending-info'}">
+                    <i class="${place.icon}" style="font-size: 1.8rem; color: white; margin-bottom: 8px; opacity: 0.9;"></i>
+                    <h4>${place.name}</h4>
+                    <p class="text-sm" style="color: var(--primary); font-weight: 500;">
+                        ${isSafari ? place.type : `${place.rating} ⭐`}
+                    </p>
+                </div>
+            `;
+            return card;
+        }
+
+        function renderHomeSections() {
+            // 1. Trending Destinations
+            const trendingContainer = document.getElementById('trending-container');
+            trendingContainer.innerHTML = '';
+            const trendingPlaces = places.filter(p => p.isTrending).slice(0, 16);
+            const groups = [];
+            for (let i = 0; i < trendingPlaces.length; i += 6) {
+                groups.push(trendingPlaces.slice(i, i + 6));
+            }
+            groups.forEach(group => {
+                const slideDiv = document.createElement('div');
+                slideDiv.className = 'destination-slide';
+                group.forEach(place => {
+                    slideDiv.appendChild(createPlaceCard(place, false, true));
+                });
+                trendingContainer.appendChild(slideDiv);
+            });
+
+            // 2. Slideshow
+            renderSlideshow();
+        }
+
+
+        // --- DETAIL VIEW RENDERING ---
+        function toggleSave(placeId) {
+            const index = savedPlaces.indexOf(placeId);
+            const heartIcon = document.getElementById(`detail-heart-${placeId}`);
+            const savedHeartIcon = document.getElementById(`saved-heart-${placeId}`);
+            const exploreHeartIcon = document.getElementById(`heart-${placeId}`);
+
+            if (index > -1) {
+                // Remove from saved
+                savedPlaces.splice(index, 1);
+                if (heartIcon) heartIcon.classList.replace('fas', 'far');
+                if (savedHeartIcon) savedHeartIcon.closest('.glass-card').remove(); // Remove card from saved view
+                if (exploreHeartIcon) exploreHeartIcon.style.color = '#ccc';
+            } else {
+                // Add to saved
+                savedPlaces.push(placeId);
+                if (heartIcon) heartIcon.classList.replace('far', 'fas');
+                if (exploreHeartIcon) exploreHeartIcon.style.color = 'var(--danger)';
+            }
+            localStorage.setItem('savedPlaces', JSON.stringify(savedPlaces));
+            updateSavedCount();
+            if (currentView === 'saved') {
+                renderSavedPlaces();
+            }
+        }
+
+        function updateSavedCount() {
+            const count = savedPlaces.length;
+            document.getElementById('saved-count').innerText = `You have ${count} saved destination${count !== 1 ? 's' : ''}`;
+            document.getElementById('empty-saved-message').style.display = savedPlaces.length === 0 ? 'block' : 'none';
+        }
+
+        function showDetail(placeId) {
+            const place = places.find(p => p.id === placeId);
+            if (!place) return;
+
+            const isSaved = savedPlaces.includes(placeId);
+
+            document.getElementById('detail-img').src = place.img;
+            document.getElementById('detail-info-card').innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                    <div>
+                        <h1 style="font-size: 1.8rem;">${place.name}</h1>
+                        <p class="text-sm" style="color: var(--primary); margin-top: 5px;">
+                            <i class="${place.icon}" style="margin-right: 5px;"></i> ${place.type} | ⭐ ${place.rating}
+                        </p>
+                    </div>
+                    <i id="detail-heart-${place.id}" class="${isSaved ? 'fas' : 'far'} fa-heart icon-lg" 
+                       style="color: var(--danger); cursor: pointer; margin-top: 5px; font-size: 2rem;"
+                       onclick="toggleSave(${place.id})"></i>
+                </div>
+                
+                <h2>About the Destination</h2>
+                <p style="margin-bottom: 20px;">${place.description}</p>
+                
+                <div class="glass-card info-card" style="padding: 15px;">
+                    <h3><i class="fas fa-calendar-alt"></i> Best Travel Times</h3>
+                    <ul>
+                        <li><span class="label">Recommended Season:</span><span class="value">${place.timing}</span></li>
+                        <li><span class="label">Avg. Estimated Cost:</span><span class="value">₹${place.cost} / person</span></li>
+                    </ul>
+                </div>
+
+                <h2 style="margin-top: 20px;">Getting There</h2>
+                <div class="glass-card info-card" style="padding: 15px;">
+                    <ul>
+                        <li onclick="openServiceView('transport');"><i class="fas fa-bus-alt"></i><span class="label">Bus/Rail Services:</span><span class="value">Check Routes <i class="fas fa-chevron-right text-muted"></i></span></li>
+                        <li onclick="openServiceView('guides');"><i class="fas fa-user-shield"></i><span class="label">Local Guides:</span><span class="value">Find Certified Guide <i class="fas fa-chevron-right text-muted"></i></span></li>
+                    </ul>
+                </div>
+            `;
+            navTo('detail');
+        }
+
+        // --- EXPLORE VIEW RENDERING/FILTERING ---
+        let currentCategory = 'All';
+        let currentSort = 'name';
+
+        function setCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const searchInput = document.getElementById('explore-search-input');
+            const searchQuery = searchInput.value.toLowerCase();
+            const clearBtn = document.getElementById('clear-search');
+            
+            // Show/hide clear button
+            clearBtn.style.display = searchQuery ? 'block' : 'none';
+            
+            let filtered = places.filter(p => {
+                const matchesCategory = currentCategory === 'All' || p.category === currentCategory;
+                const matchesSearch = p.name.toLowerCase().includes(searchQuery) || p.description.toLowerCase().includes(searchQuery) || p.type.toLowerCase().includes(searchQuery);
+                return matchesCategory && matchesSearch;
+            });
+            // Sort
+            if (currentSort === 'rating') {
+                filtered.sort((a, b) => b.rating - a.rating);
+            } else {
+                filtered.sort((a, b) => a.name.localeCompare(b.name));
+            }
+            renderExploreList(filtered);
+            navTo('explore');
+        }
+
+        function clearSearch() {
+            document.getElementById('explore-search-input').value = '';
+            applyFilters();
+        }
+
+        function toggleSort() {
+            currentSort = currentSort === 'name' ? 'rating' : 'name';
+            applyFilters();
+        }
+
+        function createExploreCard(place) {
+            const card = document.createElement('div');
+            card.className = 'glass-card explore-card';
+            card.style.cursor = 'pointer';
+            card.style.padding = '0';
+            card.style.overflow = 'hidden';
+            card.style.borderRadius = '20px';
+            card.style.transition = 'all 0.3s ease';
+            card.style.position = 'relative';
+            card.onclick = () => showDetail(place.id);
+            const isSaved = savedPlaces.includes(place.id);
+            card.innerHTML = `
+                <div class="card-image" style="position: relative;">
+                    <img src="${place.img}" style="width: 100%; height: 180px; object-fit: cover; transition: transform 0.3s ease;">
+                    <div class="card-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.3) 100%); opacity: 0; transition: opacity 0.3s ease;"></div>
+                    <button class="save-btn" onclick="event.stopPropagation(); toggleSave(${place.id})" style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.9); border: none; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">
+                        <i id="heart-${place.id}" class="fas fa-heart" style="color: ${isSaved ? 'var(--danger)' : '#ccc'}; font-size: 1rem;"></i>
+                    </button>
+                </div>
+                <div class="card-content" style="padding: 15px;">
+                    <h4 style="font-size: 1.2rem; margin-bottom: 8px; color: var(--text-main); font-weight: 600;">${place.name}</h4>
+                    <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 8px;">
+                        <span style="color: var(--primary); font-weight: 600;">⭐ ${place.rating}</span>
+                        <span style="color: var(--text-muted); font-size: 0.9rem;">• ${place.category}</span>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.4; margin-bottom: 10px;">${place.description.substring(0, 100)}...</p>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 5px; color: var(--text-muted); font-size: 0.9rem;">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>${place.location || 'Uttarakhand'}</span>
+                        </div>
+                        <button class="explore-btn" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">Explore</button>
+                    </div>
+                </div>
+            `;
+            // Add hover effects
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-5px)';
+                card.style.boxShadow = '0 10px 30px rgba(0,0,0,0.15)';
+                card.querySelector('.card-image img').style.transform = 'scale(1.05)';
+                card.querySelector('.card-overlay').style.opacity = '1';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+                card.style.boxShadow = '';
+                card.querySelector('.card-image img').style.transform = 'scale(1)';
+                card.querySelector('.card-overlay').style.opacity = '0';
+            });
+            return card;
+        }
+
+        function renderExploreList(data) {
+            const exploreList = document.getElementById('explore-list');
+            exploreList.innerHTML = '';
+            data.forEach(place => {
+                exploreList.appendChild(createExploreCard(place));
+            });
+        }
+
+        function filterExplore(category) {
+            let filtered = places;
+            if (category !== 'All') {
+                filtered = places.filter(p => p.category === category || p.type.includes(category) || category === 'Pilgrimage' && p.type.includes('Char Dham'));
+            }
+            renderExploreList(filtered);
+            navTo('explore');
+        }
+
+        function openServiceView(serviceId) {
+             navTo(serviceId);
+        }
+
+        // --- SAVED PLACES LOGIC ---
+        function renderSavedPlaces() {
+            const savedContainer = document.getElementById('saved-container');
+            savedContainer.innerHTML = '';
+
+            if (savedPlaces.length === 0) {
+                document.getElementById('empty-saved-message').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('empty-saved-message').style.display = 'none';
+
+            savedPlaces.forEach(placeId => {
+                const place = places.find(p => p.id === placeId);
+                if (place) {
+                    const savedCard = document.createElement('div');
+                    savedCard.className = 'glass-card';
+                    savedCard.style.padding = '15px';
+                    savedCard.style.display = 'flex';
+                    savedCard.style.alignItems = 'center';
+                    savedCard.style.gap = '15px';
+                    savedCard.innerHTML = `
+                        <img src="${place.img}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 10px;">
+                        <div style="flex-grow: 1;" onclick="showDetail(${place.id})">
+                            <h4>${place.name}</h4>
+                            <p class="text-sm">${place.category} | Rating: ${place.rating} ⭐</p>
+                        </div>
+                        <i id="saved-heart-${place.id}" class="fas fa-heart" style="color: var(--danger); font-size: 1.2rem; cursor: pointer;" onclick="toggleSave(${place.id})"></i>
+                    `;
+                    savedContainer.appendChild(savedCard);
+                }
+            });
+        }
+
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            updateGreeting();
+            // Check if user name is stored (from previous guest/login)
+            const storedUserName = localStorage.getItem('userName');
+            if (storedUserName) {
+                userName = storedUserName;
+                setUserInfo(userName);
+            } else {
+                // Set default guest
+                userName = "Explorer";
+                setUserInfo("Explorer");
+            }
+            // Always start on home view
+            navTo('home');
+            
+            renderHomeSections();
+            applyFilters();
+            document.querySelector('.filter-btn').classList.add('active');
+            updateSavedCount();
+            initFeaturedSlideshow();
+            // Update sort label
+            const label = document.getElementById('sort-label');
+            const icon = document.querySelector('#sort-label')?.previousElementSibling;
+            if (label && icon) {
+                if (popularSortOrder === 'name') {
+                    label.textContent = 'Sort by Name';
+                    icon.className = 'fas fa-sort-alpha-down';
+                } else {
+                    label.textContent = 'Sort by Rating';
+                    icon.className = 'fas fa-star';
+                }
+            }
+        });
+        let map;
+function initMap() {
+  map = L.map('map').setView([30.0668, 79.4474], 8); // Uttarakhand center
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+  
+  // Custom markers from places data
+  places.forEach(place => {
+    if (place.lat && place.lng) {
+      const customIcon = L.divIcon({
+        className: 'custom-marker',
+        html: `<i class="fas ${place.icon}" style="color: var(--primary); font-size: 1.5rem;"></i>`,
+        iconSize: [30, 30],
+        popupAnchor: [0, -20]
+      });
+      L.marker([place.lat, place.lng], {icon: customIcon})
+        .addTo(map)
+        .bindPopup(`
+          <div class="glass-card" style="min-width: 250px;">
+            <h4>${place.name}</h4>
+            <p><i class="${place.icon}"></i> ${place.category}</p>
+            <p>${place.description.substring(0, 100)}...</p>
+            <button onclick="showDetail(${place.id})" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 20px;">View Details</button>
+          </div>
+        `);
+    }
+  });
+  
+  // Custom controls (e.g., cluster saved places)
+  L.control.layers({}, {}).addTo(map);
+}
+
+// Call on map view activation
+if (currentView === 'map') initMap();
+
+    </script>
+</body>
+</html>

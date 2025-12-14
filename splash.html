@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevBhoomi Explorer - Loading</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #f59e0b;
+            --text-light: #f8fafc;
+            --overlay-start: rgba(0, 0, 0, 0.2);
+            --overlay-end: rgba(0, 0, 0, 0.5);
+            --glass-bg: rgba(255, 255, 255, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            height: 100vh; 
+            overflow: hidden; 
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease-out; 
+        }
+
+        /* Video Background */
+        .video-background {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .video-background video {
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            object-fit: cover;
+            filter: brightness(1.1);
+        }
+
+        /* Gradient Overlay */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(to bottom, var(--overlay-start) 0%, var(--overlay-end) 100%);
+            z-index: 2;
+        }
+
+        /* Content Area */
+        .splash-content {
+            position: relative;
+            z-index: 3;
+            text-align: center;
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+        }
+
+        p {
+            font-weight: 500;
+            font-size: 1.1rem;
+            opacity: 0.95;
+            margin-bottom: 70px; 
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+        }
+        
+        /* Utility Button (Skip) */
+        .utility-btn {
+            position: absolute; 
+            top: 20px; 
+            right: 20px; 
+            z-index: 5;
+            color: var(--text-light); cursor: pointer;
+            font-size: 0.9rem; font-weight: 600; padding: 8px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 12px;
+            transition: 0.2s; display: flex; align-items: center; gap: 8px;
+            background: var(--glass-bg); 
+            backdrop-filter: blur(5px);
+            text-decoration: none;
+        }
+        .utility-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+    </style>
+</head>
+<body>
+    <audio id="audioBells" loop muted><source src="" type="D:\final and Yes\temple-bells-277268.mp3"></audio>
+    <audio id="audioWater" loop muted><source src="" type="D:\final and Yes\flowing-water-246403.mp3"></audio>
+    <audio id="audioWind" loop muted><source src="" type="D:\final and Yes\winter-wind-402331.mp3"></audio>
+
+    <div class="video-background">
+        <video autoplay muted loop playsinline id="splashVideo" poster="https://placehold.co/1920x1080/000000/FFF/png">
+            <source id="videoSource" src="" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+
+    <div class="overlay"></div>
+
+    <button class="utility-btn" id="skipButton" onclick="goToNextPage()">
+        <span>Skip</span>
+    </button>
+    
+    <div class="splash-content">
+        <h1 id="seasonMessage">DevBhoomi Explorer</h1>
+        <p>Unveiling the spirit of the mountains.</p>
+    </div>
+    
+    <script>
+        // --- CONFIGURATION ---
+        const VIDEO_LINKS = [
+             "https://cdn.pixabay.com/video/2025/05/03/276474_tiny.mp4", // Original
+            "https://cdn.pixabay.com/video/2025/05/20/280218_tiny.mp4", // Mountain peak, clouds
+            "https://cdn.pixabay.com/video/2025/08/21/298795_tiny.mp4", // rishikesh
+            "https://media.istockphoto.com/id/2246662404/video/4k-time-lapse-of-storm-clouds-surrounds-snowy-pine-forest-in-mountains-at-uttarakhand-winter.mp4?s=mp4-640x640-is&k=20&c=IBcNijTPH4ltKK20hQBH4DvCDchV25E0Q62svXjyVuo="  // Forest trail
+         ];
+        const LAST_INDEX_KEY = 'devbhoomi_last_video_index';
+        const AUTO_SKIP_DELAY = 11000; // 11 seconds in milliseconds
+        let autoSkipTimer = null; // Variable to hold the timer reference
+
+        // --- 1. VIDEO CYCLE LOGIC ---
+        function loadCyclingVideo() {
+            const lastIndex = parseInt(localStorage.getItem(LAST_INDEX_KEY) || -1);
+            
+            // Calculate next index: cycle 0 -> 1 -> 2 -> 3 -> 0
+            const nextIndex = (lastIndex + 1) % VIDEO_LINKS.length;
+            const nextVideoUrl = VIDEO_LINKS[nextIndex];
+
+            // Save the new index for the next app open
+            localStorage.setItem(LAST_INDEX_KEY, nextIndex);
+
+            // Apply video source and reload
+            const videoSource = document.getElementById('videoSource');
+            const videoElement = document.getElementById('splashVideo');
+            
+            videoSource.src = nextVideoUrl;
+            videoElement.load();
+        }
+
+        // --- 2. SEASONAL LOGIC & AUDIO CONTROL ---
+        let activeSounds = [];
+
+        function getSeason() {
+            const month = new Date().getMonth() + 1;
+            
+            if (month >= 3 && month <= 5) return { name: "Spring", sounds: ["bells", "water"], message: "Spring | Rivers Awake" };
+            if (month >= 6 && month <= 9) return { name: "Monsoon", sounds: ["bells", "water"], message: "Monsoon | High Flow" };
+            if (month >= 10 && month <= 11) return { name: "Autumn", sounds: ["bells", "water"], message: "Autumn | Clear Views" };
+            
+            return { name: "Winter", sounds: ["bells", "wind"], message: "Winter | Cold Winds" };
+        }
+
+        function initializeSeasonalAudio() {
+            const season = getSeason();
+            document.getElementById('seasonMessage').innerText = season.message;
+            activeSounds = [];
+
+            // Attempt muted autoplay automatically
+            season.sounds.forEach(soundName => {
+                const audioEl = document.getElementById(`audio${soundName.charAt(0).toUpperCase() + soundName.slice(1)}`);
+                if (audioEl) {
+                    audioEl.muted = true;
+                    audioEl.volume = 0.5;
+                    audioEl.play().catch(e => console.log(`Autoplay muted failed for ${soundName}.`));
+                    activeSounds.push(audioEl);
+                }
+            });
+        }
+
+        function stopAudio() {
+            activeSounds.forEach(audioEl => {
+                audioEl.pause();
+                audioEl.currentTime = 0;
+            });
+        }
+
+        // --- 3. NAVIGATION LOGIC (With Timer Cancellation) ---
+        function goToNextPage() {
+            // Clear the auto-skip timer if navigation is triggered manually
+            if (autoSkipTimer) {
+                clearTimeout(autoSkipTimer);
+                autoSkipTimer = null;
+            }
+
+            stopAudio();
+            
+            // Fade out effect before redirecting
+            const mainContent = document.querySelector('body');
+            mainContent.style.opacity = 0;
+            
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 500);
+        }
+
+        // --- 4. INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCyclingVideo();
+            initializeSeasonalAudio(); 
+            
+            const videoElement = document.getElementById('splashVideo');
+
+            // Set the auto-skip timer (20 seconds)
+            autoSkipTimer = setTimeout(goToNextPage, AUTO_SKIP_DELAY);
+
+            // Autoplay Fallback: ensures media starts playing (muted) after the first user interaction
+            function startMediaOnUserAction() {
+                if (videoElement.paused) {
+                    videoElement.play();
+                }
+                
+                activeSounds.forEach(audioEl => {
+                    if (audioEl.paused) {
+                        audioEl.play().catch(e => console.log('Audio autoplay failed on user interaction.'));
+                    }
+                });
+                
+                document.removeEventListener('click', startMediaOnUserAction);
+                document.removeEventListener('touchstart', startMediaOnUserAction);
+            }
+            
+            document.addEventListener('click', startMediaOnUserAction);
+            document.addEventListener('touchstart', startMediaOnUserAction);
+        });
+    </script>
+</body>
+</html>
